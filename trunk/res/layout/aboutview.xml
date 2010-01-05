@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+	<ScrollView android:id="@+id/aboutscrollview" 
+		android:orientation="vertical"
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent">    
+		<LinearLayout
+		    android:orientation="vertical"
+		    android:layout_width="fill_parent"
+		    android:layout_height="fill_parent">
+			<TextView android:text="About: "
+				android:layout_width="fill_parent" 
+				android:layout_height="wrap_content"
+				android:paddingTop="15px"
+				android:paddingLeft="15px"
+				android:textStyle="bold"
+				android:textColor="#ffffff" />
+			<TextView android:text="This program manipulates the camera LED on the Nexus One phone.\n\nRequires root access, because setting it to 'always on' is not supported in the SDK, and only root can open the device.\n\nWarning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the SDK doesnt support it yet....\n\nContact: bbuxton@gmail.com\n\n24/12/2009"
+				android:layout_width="fill_parent" 
+				android:layout_height="wrap_content"
+				android:paddingLeft="15px"		
+				android:layout_gravity="center_vertical"
+				android:textColor="#ffffff" />													
+			</LinearLayout>
+		</ScrollView>			
+</LinearLayout>
