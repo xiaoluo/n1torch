@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+	<Button  
+	    android:id="@+id/buttonOff"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="10mm" 
+	    android:layout_marginTop="20dp"
+	    android:layout_marginLeft="20dp"
+	    android:layout_marginRight="20dp"
+	    android:textSize="18pt"
+	    android:text="Off"
+	    />
+	<Button  
+		android:id="@+id/buttonOn"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="10mm" 
+	    android:layout_margin="15dp"
+	    android:text="Torch On"
+	    android:textSize="18pt"
+	    android:layout_centerVertical="true"
+	    android:layout_below="@id/buttonOff"
+	    
+	    />
+	<Button  
+		android:id="@+id/buttonFlash"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="10mm" 
+	    android:text="Flash!" 
+	    android:layout_margin="15dp"
+	    android:textStyle="bold"
+	    android:textSize="18pt"
+	    android:layout_below="@id/buttonOn"
+	    />
+	<TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="Nexus One Torch"
+		android:textColor="#ffffd0"
+		android:background="#000040"
+		android:textStyle="bold"
+		android:textSize="16dp"
+		android:padding="20dp"
+		android:layout_centerHorizontal="true"
+		android:layout_below="@id/buttonFlash"
+		/>
+
+	<TextView
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="'Menu' for info."
+		android:textColor="#ffffd0"
+		android:background="#000040"
+		android:layout_centerHorizontal="true"
+		/>
+
+</RelativeLayout>
