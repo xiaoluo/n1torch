@@ -18,22 +18,37 @@
 		android:id="@+id/buttonOn"
 	    android:layout_width="fill_parent" 
 	    android:layout_height="10mm" 
-	    android:layout_margin="15dp"
+	    android:layout_marginTop="15dp"
+	    android:layout_marginLeft="20dp"
+	    android:layout_marginRight="20dp"
 	    android:text="Torch On"
 	    android:textSize="18pt"
 	    android:layout_centerVertical="true"
 	    android:layout_below="@id/buttonOff"
-	    
+	    />
+	<Button  
+		android:id="@+id/buttonStrobe"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="10mm" 
+	    android:layout_marginTop="15dp"
+	    android:layout_marginLeft="20dp"
+	    android:layout_marginRight="20dp"
+	    android:text="Strobe"
+	    android:textSize="18pt"
+	    android:layout_centerVertical="true"
+	    android:layout_below="@id/buttonOn"
 	    />
 	<Button  
 		android:id="@+id/buttonFlash"
 	    android:layout_width="fill_parent" 
 	    android:layout_height="10mm" 
 	    android:text="Flash!" 
-	    android:layout_margin="15dp"
+	    android:layout_marginTop="15dp"
+	    android:layout_marginLeft="20dp"
+	    android:layout_marginRight="20dp"
 	    android:textStyle="bold"
 	    android:textSize="18pt"
-	    android:layout_below="@id/buttonOn"
+	    android:layout_below="@id/buttonStrobe"
 	    />
 	<TextView
 		android:layout_width="wrap_content"
