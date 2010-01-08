@@ -31,8 +31,10 @@ import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
@@ -42,6 +44,8 @@ public class MainActivity extends Activity {
 	public Boolean strobing;
 	private Button buttonFlash;
 	public Thread strobeThread;
+	public SeekBar slider;
+	public int strobeperiod;
 	private Context context;
 	public SuCommand su_command;
 		
@@ -54,10 +58,12 @@ public class MainActivity extends Activity {
         buttonOff = (Button) findViewById(R.id.buttonOff);
         buttonOn = (Button) findViewById(R.id.buttonOn);
         buttonStrobe = (Button) findViewById(R.id.buttonStrobe);
+        slider = (SeekBar) findViewById(R.id.slider);
 
         buttonFlash = (Button) findViewById(R.id.buttonFlash);
         su_command = new SuCommand();
         strobing = false;
+        strobeperiod = 100;
         
         buttonOff.setOnClickListener(new OnClickListener() {
 			@Override
@@ -93,14 +99,14 @@ public class MainActivity extends Activity {
 						while (strobing && !Thread.interrupted()) {
 							setFlashOn();
 							try {
-								Thread.sleep(100);
+								Thread.sleep(strobeperiod);
 							} catch (InterruptedException e) {
 								setFlashOff();
 							}
 							if (strobing)
 								setFlashOff();
 							try {
-								Thread.sleep(100);
+								Thread.sleep(strobeperiod);
 							} catch (InterruptedException e) {
 								setFlashOff();
 							}
@@ -110,6 +116,31 @@ public class MainActivity extends Activity {
 				});
 				strobeThread.start();
 			}
+        });
+        
+        setProgressBarVisibility(true);
+        slider.setHorizontalScrollBarEnabled(true);
+        slider.setProgress(100);
+        slider.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+					boolean fromUser) {
+				strobeperiod = 200 - progress;				
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+				
+			}
+        	
         });
         
         buttonFlash.setOnClickListener(new OnClickListener() {
