@@ -31,22 +31,26 @@ import android.view.View;
 import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
 	private Button buttonOff;
 	private Button buttonOn;
-	private Button buttonStrobe;
+	private ToggleButton buttonStrobe;
 	public Boolean strobing;
 	private Button buttonFlash;
 	public Thread strobeThread;
 	public SeekBar slider;
 	public int strobeperiod;
 	private Context context;
+	public TextView strobeLabel;
 	public SuCommand su_command;
 		
     /** Called when the activity is first created. */
@@ -57,7 +61,8 @@ public class MainActivity extends Activity {
         context = this.getApplicationContext();
         buttonOff = (Button) findViewById(R.id.buttonOff);
         buttonOn = (Button) findViewById(R.id.buttonOn);
-        buttonStrobe = (Button) findViewById(R.id.buttonStrobe);
+        buttonStrobe = (ToggleButton) findViewById(R.id.buttonStrobe);
+        strobeLabel = (TextView) findViewById(R.id.strobeTimeLabel);
         slider = (SeekBar) findViewById(R.id.slider);
 
         buttonFlash = (Button) findViewById(R.id.buttonFlash);
@@ -69,6 +74,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				strobing = false;
+				buttonStrobe.setChecked(false);
 				if (setFlashOff().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
 					return;
@@ -81,6 +87,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				strobing = false;
+				buttonStrobe.setChecked(false);
 				if (setFlashOn().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
 					return;
@@ -89,9 +96,15 @@ public class MainActivity extends Activity {
 			}
         });
         
-        buttonStrobe.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
+        buttonStrobe.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			public void onCheckedChanged(CompoundButton b, boolean checked) {
+				if (!checked) {
+					if (strobeThread != null) {
+						strobing = false;
+						strobeThread.interrupt();
+					}
+					return;
+				}
 				strobeThread = new Thread(new Runnable() {
 					@Override
 					public void run() {
@@ -126,7 +139,8 @@ public class MainActivity extends Activity {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
-				strobeperiod = 200 - progress;				
+				strobeperiod = 200 - progress;
+				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
 			}
 
 			@Override
@@ -147,6 +161,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				strobing = false;
+				buttonStrobe.setChecked(false);
 				if (setFlashFlash().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED flash", Toast.LENGTH_LONG).show();
 					return;
@@ -174,6 +189,7 @@ public class MainActivity extends Activity {
     
     public void onPause() {
     	strobing = false;
+		buttonStrobe.setChecked(false);
     	if (strobeThread != null) {
 	    	try {
 				strobeThread.join();
