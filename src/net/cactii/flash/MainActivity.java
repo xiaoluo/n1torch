@@ -30,17 +30,28 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
+    // Off button
 	private Button buttonOff;
+	// On button
 	private Button buttonOn;
+	// Strobe toggle
 	private ToggleButton buttonStrobe;
+	// Is the strobe running?
 	public Boolean strobing;
+	// Flash button
 	private Button buttonFlash;
+	// Thread to handle strobing
 	public Thread strobeThread;
+	// Strobe frequency slider.
 	public SeekBar slider;
+	// Period of strobe, in milliseconds
 	public int strobeperiod;
 	private Context context;
+	// Label showing strobe frequency
 	public TextView strobeLabel;
+	// Represents a 'su' instance
 	public SuCommand su_command;
+	// Preferences
 	public SharedPreferences mPrefs;
 	public SharedPreferences.Editor mPrefsEditor = null;
 
@@ -67,6 +78,7 @@ public class MainActivity extends Activity {
         // preferenceEditor
         this.mPrefsEditor = this.mPrefs.edit();
         
+        // Turn LED off.
         buttonOff.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -80,6 +92,7 @@ public class MainActivity extends Activity {
 			}
         });
         
+        // Turn LED on
         buttonOn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -93,21 +106,42 @@ public class MainActivity extends Activity {
 			}
         });
         
+        // Handle LED strobe function.
         buttonStrobe.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+          public boolean mTimedOut;
 			public void onCheckedChanged(CompoundButton b, boolean checked) {
 				if (!checked) {
 					if (strobeThread != null) {
 						strobing = false;
 						strobeThread.interrupt();
+						if (mTimedOut) {
+						  Toast.makeText(MainActivity.this, "Stopping strobe to save LED", Toast.LENGTH_SHORT).show();
+						  mTimedOut = false;
+						}
 					}
 					return;
 				}
 				strobeThread = new Thread(new Runnable() {
 					@Override
 					public void run() {
+					    mTimedOut = false;
 						strobing = true;
 						int onTime;
+						long startTime = System.currentTimeMillis();
 						while (strobing && !Thread.interrupted()) {
+						  
+						  // Stop strobe if on for more than 25 seconds. Otherwise the
+						  // LED lifetime may be reduced.
+						  if (System.currentTimeMillis() - startTime > 25000) {
+						    strobing = false;
+						    mTimedOut = true;
+						    buttonStrobe.post(new Runnable() {
+                              @Override
+                              public void run() {
+                                buttonStrobe.setChecked(false);
+                              }
+						    });
+						  }
 						    onTime = strobeperiod/4;
 							setFlashFlash();
 							try {
@@ -130,6 +164,7 @@ public class MainActivity extends Activity {
 			}
         });
         
+        // Strobe frequency slider bar handling
         setProgressBarVisibility(true);
         slider.setHorizontalScrollBarEnabled(true);
         slider.setProgress(200 - this.mPrefs.getInt("strobeperiod", 100));
@@ -147,17 +182,16 @@ public class MainActivity extends Activity {
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
-				
 			}
 
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
-				
 			}
         	
         });
         
+        // FLASH button.
         buttonFlash.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -171,6 +205,7 @@ public class MainActivity extends Activity {
 			}
         });
         
+        // Show the about dialog, the first time the user runs the app.
         if (!this.mPrefs.getBoolean("aboutSeen", false)) {
           this.openAboutDialog();
           this.mPrefsEditor.putBoolean("aboutSeen", true);
@@ -216,6 +251,7 @@ public class MainActivity extends Activity {
     	super.onResume();
     }
     
+    // These functions are defined in the native libflash library.
     public native String  openFlash();
     public native String  setFlashOff();
     public native String  setFlashOn();
@@ -252,6 +288,10 @@ public class MainActivity extends Activity {
         .show();  		
    	}
    	
+   	/*
+   	 * This class handles 'su' functionality. Ensures that the command can be run, then
+   	 * handles run/pipe/return flow.
+   	 */
    	private class SuCommand {
    		public boolean can_su;
    		public String su_bin_file;
@@ -290,6 +330,8 @@ public class MainActivity extends Activity {
    	    	return false;
    	    }	
    	}
+   	
+   	// Load libflash once on app startup.
    	static {
    		System.loadLibrary("flash");
    	}
