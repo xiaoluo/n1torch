@@ -2,33 +2,22 @@ package net.cactii.flash;
 
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.List;
 
-import android.R.drawable;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.hardware.Camera;
-import android.hardware.Camera.Parameters;
-import android.net.Uri;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SubMenu;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -52,7 +41,9 @@ public class MainActivity extends Activity {
 	private Context context;
 	public TextView strobeLabel;
 	public SuCommand su_command;
-		
+	public SharedPreferences mPrefs;
+	public SharedPreferences.Editor mPrefsEditor = null;
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -64,11 +55,17 @@ public class MainActivity extends Activity {
         buttonStrobe = (ToggleButton) findViewById(R.id.buttonStrobe);
         strobeLabel = (TextView) findViewById(R.id.strobeTimeLabel);
         slider = (SeekBar) findViewById(R.id.slider);
-
+        
         buttonFlash = (Button) findViewById(R.id.buttonFlash);
         su_command = new SuCommand();
         strobing = false;
         strobeperiod = 100;
+        
+        // Preferences
+        this.mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        
+        // preferenceEditor
+        this.mPrefsEditor = this.mPrefs.edit();
         
         buttonOff.setOnClickListener(new OnClickListener() {
 			@Override
@@ -109,10 +106,12 @@ public class MainActivity extends Activity {
 					@Override
 					public void run() {
 						strobing = true;
+						int onTime;
 						while (strobing && !Thread.interrupted()) {
-							setFlashOn();
+						    onTime = strobeperiod/4;
+							setFlashFlash();
 							try {
-								Thread.sleep(strobeperiod);
+								Thread.sleep(onTime);
 							} catch (InterruptedException e) {
 								setFlashOff();
 							}
@@ -133,7 +132,9 @@ public class MainActivity extends Activity {
         
         setProgressBarVisibility(true);
         slider.setHorizontalScrollBarEnabled(true);
-        slider.setProgress(100);
+        slider.setProgress(200 - this.mPrefs.getInt("strobeperiod", 100));
+        strobeperiod = this.mPrefs.getInt("strobeperiod", 100);
+        strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
         slider.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
 			@Override
@@ -170,6 +171,11 @@ public class MainActivity extends Activity {
 			}
         });
         
+        if (!this.mPrefs.getBoolean("aboutSeen", false)) {
+          this.openAboutDialog();
+          this.mPrefsEditor.putBoolean("aboutSeen", true);
+        }
+        
         boolean is_supported = true;
         
         if (new File("/dev/msm_camera/config0").exists() == false) {
@@ -190,6 +196,7 @@ public class MainActivity extends Activity {
     public void onPause() {
     	strobing = false;
 		buttonStrobe.setChecked(false);
+		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
     	if (strobeThread != null) {
 	    	try {
 				strobeThread.join();
@@ -200,6 +207,7 @@ public class MainActivity extends Activity {
     	}
     	setFlashOff();
     	closeFlash();
+    	this.mPrefsEditor.commit();
     	super.onPause();
     }
     

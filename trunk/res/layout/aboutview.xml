@@ -18,12 +18,25 @@
 				android:paddingLeft="15px"
 				android:textStyle="bold"
 				android:textColor="#ffffff" />
-			<TextView android:text="This program manipulates the camera LED on the Nexus One phone.\n\nRequires root access, because setting it to 'always on' is not supported in the SDK, and only root can open the device.\n\nWarning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the SDK doesnt support it yet....\n\nReleased under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nContact: bbuxton@gmail.com\n\n24/12/2009"
+			<TextView android:text="This program manipulates the camera LED on the Nexus One phone.\n\nRequires a rooted phone, as 'always on' is not officially supported.\n"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		
 				android:layout_gravity="center_vertical"
-				android:textColor="#ffffff" />													
+				android:textColor="#ffffff" />		
+			<TextView android:text="Warning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the API doesnt support it yet....\n\nI do not support full brightness 'always on' as this could damage the LED.\n"
+				android:layout_width="fill_parent" 
+				android:layout_height="wrap_content"
+				android:paddingLeft="15px"		
+				android:layout_gravity="center_vertical"
+				android:textStyle="bold"
+				android:textColor="#ffffff" />		
+			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nContact: bbuxton@gmail.com\n\n24/12/2009"
+				android:layout_width="fill_parent" 
+				android:layout_height="wrap_content"
+				android:paddingLeft="15px"		
+				android:layout_gravity="center_vertical"
+				android:textColor="#ffffff" />											
 			</LinearLayout>
 		</ScrollView>			
 </LinearLayout>
