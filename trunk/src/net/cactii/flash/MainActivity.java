@@ -12,7 +12,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
-
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,6 +29,8 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
+	public static final boolean BRIGHT = false;
+	
     // Off button
 	private Button buttonOff;
 	// On button
@@ -42,10 +43,17 @@ public class MainActivity extends Activity {
 	private Button buttonFlash;
 	// Thread to handle strobing
 	public Thread strobeThread;
+	public boolean mStrobeThreadRunning;
+	
+	public Thread torchThread;
+	public boolean mTorchThreadRunning;
+	public boolean mTorchOn;
 	// Strobe frequency slider.
 	public SeekBar slider;
 	// Period of strobe, in milliseconds
 	public int strobeperiod;
+	// Strobe has timed out
+	public boolean mTimedOut;
 	private Context context;
 	// Label showing strobe frequency
 	public TextView strobeLabel;
@@ -71,6 +79,8 @@ public class MainActivity extends Activity {
         su_command = new SuCommand();
         strobing = false;
         strobeperiod = 100;
+        mTorchOn = false;
+        mTorchThreadRunning = false;
         
         // Preferences
         this.mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -83,6 +93,7 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				strobing = false;
+				mTorchOn = false;
 				buttonStrobe.setChecked(false);
 				if (setFlashOff().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
@@ -98,22 +109,94 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				strobing = false;
 				buttonStrobe.setChecked(false);
-				if (setFlashOn().equals("Failed")) {
-					Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
-					return;
+				if (BRIGHT) {
+					mTorchOn = true;
+				} else {
+					if (setFlashOn().equals("Failed")) {
+						Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
+						return;
+					}
+					Toast.makeText(context, "Turned LED on", Toast.LENGTH_SHORT).show();
 				}
-				Toast.makeText(context, "Turned LED on", Toast.LENGTH_SHORT).show();
 			}
         });
         
+		torchThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (!Thread.interrupted()) {
+					while (mTorchOn) {
+							setFlashFlash();
+							try {
+								Thread.sleep(200);
+							} catch (InterruptedException e) {
+								setFlashOff();
+							}
+					}
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						setFlashOff();
+					}
+				}
+				mTorchOn = false;
+			}
+		});
+		torchThread.start();
+		
+		strobeThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (!Thread.interrupted()) {
+				    mTimedOut = false;
+					int onTime;
+					long startTime = System.currentTimeMillis();
+					while (strobing) {
+					  
+					  // Stop strobe if on for more than 25 seconds. Otherwise the
+					  // LED lifetime may be reduced.
+					  if (System.currentTimeMillis() - startTime > 25000) {
+					    strobing = false;
+					    mTimedOut = true;
+					    buttonStrobe.post(new Runnable() {
+		                  @Override
+		                  public void run() {
+		                    buttonStrobe.setChecked(false);
+		                  }
+					    });
+					  }
+					    onTime = strobeperiod/4;
+						setFlashFlash();
+						try {
+							Thread.sleep(onTime);
+						} catch (InterruptedException e) {
+							setFlashOff();
+						}
+						if (strobing)
+							setFlashOff();
+						try {
+							Thread.sleep(strobeperiod);
+						} catch (InterruptedException e) {
+							setFlashOff();
+						}
+					}
+					strobing = false;
+					try {
+						Thread.sleep(strobeperiod);
+					} catch (InterruptedException e) {
+						setFlashOff();
+					}
+				}
+			}
+		});
+		strobeThread.start();
+        
         // Handle LED strobe function.
         buttonStrobe.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-          public boolean mTimedOut;
 			public void onCheckedChanged(CompoundButton b, boolean checked) {
 				if (!checked) {
 					if (strobeThread != null) {
 						strobing = false;
-						strobeThread.interrupt();
 						if (mTimedOut) {
 						  Toast.makeText(MainActivity.this, "Stopping strobe to save LED", Toast.LENGTH_SHORT).show();
 						  mTimedOut = false;
@@ -121,46 +204,8 @@ public class MainActivity extends Activity {
 					}
 					return;
 				}
-				strobeThread = new Thread(new Runnable() {
-					@Override
-					public void run() {
-					    mTimedOut = false;
-						strobing = true;
-						int onTime;
-						long startTime = System.currentTimeMillis();
-						while (strobing && !Thread.interrupted()) {
-						  
-						  // Stop strobe if on for more than 25 seconds. Otherwise the
-						  // LED lifetime may be reduced.
-						  if (System.currentTimeMillis() - startTime > 25000) {
-						    strobing = false;
-						    mTimedOut = true;
-						    buttonStrobe.post(new Runnable() {
-                              @Override
-                              public void run() {
-                                buttonStrobe.setChecked(false);
-                              }
-						    });
-						  }
-						    onTime = strobeperiod/4;
-							setFlashFlash();
-							try {
-								Thread.sleep(onTime);
-							} catch (InterruptedException e) {
-								setFlashOff();
-							}
-							if (strobing)
-								setFlashOff();
-							try {
-								Thread.sleep(strobeperiod);
-							} catch (InterruptedException e) {
-								setFlashOff();
-							}
-						}
-						strobing = false;
-					}
-				});
-				strobeThread.start();
+				strobing = true;
+				mTorchOn = false;
 			}
         });
         
@@ -175,18 +220,18 @@ public class MainActivity extends Activity {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
-				strobeperiod = 200 - progress;
+				strobeperiod = 201 - progress;
+				if (strobeperiod < 10)
+					strobeperiod = 10;
 				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
 			}
 
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
-				// TODO Auto-generated method stub
 			}
 
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
-				// TODO Auto-generated method stub
 			}
         	
         });
@@ -216,31 +261,39 @@ public class MainActivity extends Activity {
         if (new File("/dev/msm_camera/config0").exists() == false) {
         	Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
         	is_supported = false;
-        } else 
+        } else {
         	is_supported = this.su_command.can_su;
-        
+        	if (!is_supported)
+        		this.openNotRootDialog();
+        }
         if (!is_supported) {
         	buttonOff.setEnabled(false);
         	buttonOn.setEnabled(false);
         	buttonFlash.setEnabled(false);
+        	buttonStrobe.setEnabled(false);
+        	slider.setEnabled(false);
         } else {
         	su_command.Run("chmod 666 /dev/msm_camera/config0");
         }
     }
     
     public void onPause() {
-    	strobing = false;
-		buttonStrobe.setChecked(false);
-		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
-    	if (strobeThread != null) {
-	    	try {
-				strobeThread.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+    	if (strobing) {
+	    	strobing = false;
+			buttonStrobe.setChecked(false);
+	    	if (strobeThread != null) {
+		    	try {
+					strobeThread.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	    	}
+	    	setFlashOff();
     	}
-    	setFlashOff();
+    	this.mTorchOn = false;
+    	this.torchThread.interrupt();
+		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
     	closeFlash();
     	this.mPrefsEditor.commit();
     	super.onPause();
@@ -288,6 +341,25 @@ public class MainActivity extends Activity {
         .show();  		
    	}
    	
+   	private void openNotRootDialog() {
+		LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.norootview, null); 
+		new AlertDialog.Builder(MainActivity.this)
+        .setTitle("Not Root!")
+        .setView(view)
+        .setNegativeButton("Close", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                        MainActivity.this.finish();
+                }
+        })
+        .setNeutralButton("Override", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // nothing
+                }
+        })
+        .show();
+   	}
+   	
    	/*
    	 * This class handles 'su' functionality. Ensures that the command can be run, then
    	 * handles run/pipe/return flow.
@@ -298,16 +370,14 @@ public class MainActivity extends Activity {
    		
    		public SuCommand() {
    			this.can_su = true;
-   	        File su_bin = new File("/system/xbin/su");
-   	        if (su_bin.exists() == false) {
-   	        	su_bin = new File("/system/bin/su");
-   	        	if (su_bin.exists() == false) {
-   	        		Toast.makeText(context, "Cant find 'su' binary!", Toast.LENGTH_LONG).show();
-   	        		this.can_su = false;
-   	        	} else
-   	        		this.su_bin_file = "/system/bin/su";
-   	        } else
-   	        	this.su_bin_file = "/system/xbin/su";
+   			this.su_bin_file = "/system/xbin/su";
+   			if (this.Run("echo"))
+   				return;
+   			this.su_bin_file = "/system/bin/su";
+   			if (this.Run("echo"))
+   				return;
+   			this.su_bin_file = "";
+   			this.can_su = false;	
    		}
    	    public boolean Run(String command) {
    	    	DataOutputStream os = null;
