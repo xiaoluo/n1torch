@@ -32,7 +32,10 @@ public class TorchWidgetProvider extends AppWidgetProvider {
             int appWidgetId = appWidgetIds[i];
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
             
-            if (!new Su().can_su) {
+            Su su = new Su();
+            if (!su.can_su) {
+            	// If 'su' is not available, clicking the widget will bring
+            	// up the main activity where the user will be notified.
 	            Intent intent = new Intent(context, MainActivity.class);
 	            PendingIntent pendingIntent = PendingIntent.getActivity(context,
 	            		0, intent, 0);
@@ -42,7 +45,6 @@ public class TorchWidgetProvider extends AppWidgetProvider {
     			if (!device.open) {
     				device.Open();
     				if (!device.open) {
-    					su = new Su();
     					su.Run("chmod 666 /dev/msm_camera/config0");
     				}
     			}
