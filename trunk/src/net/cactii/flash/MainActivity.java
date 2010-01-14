@@ -2,6 +2,7 @@ package net.cactii.flash;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FilePermission;
 import java.io.IOException;
 
 import android.app.Activity;
@@ -12,6 +13,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -31,6 +33,9 @@ public class MainActivity extends Activity {
 
 	public static final boolean BRIGHT = false;
 	
+	public TorchWidgetProvider mWidgetProvider;
+	
+	public FlashDevice device;
     // Off button
 	private Button buttonOff;
 	// On button
@@ -58,7 +63,7 @@ public class MainActivity extends Activity {
 	// Label showing strobe frequency
 	public TextView strobeLabel;
 	// Represents a 'su' instance
-	public SuCommand su_command;
+	public Su su_command;
 	// Preferences
 	public SharedPreferences mPrefs;
 	public SharedPreferences.Editor mPrefsEditor = null;
@@ -76,11 +81,14 @@ public class MainActivity extends Activity {
         slider = (SeekBar) findViewById(R.id.slider);
         
         buttonFlash = (Button) findViewById(R.id.buttonFlash);
-        su_command = new SuCommand();
+        su_command = new Su();
         strobing = false;
         strobeperiod = 100;
         mTorchOn = false;
         mTorchThreadRunning = false;
+        
+        mWidgetProvider = TorchWidgetProvider.getInstance();
+        device = FlashDevice.getInstance();
         
         // Preferences
         this.mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -95,11 +103,12 @@ public class MainActivity extends Activity {
 				strobing = false;
 				mTorchOn = false;
 				buttonStrobe.setChecked(false);
-				if (setFlashOff().equals("Failed")) {
+				if (device.FlashOff().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
 					return;
 				}
 				Toast.makeText(context, "Turned LED off", Toast.LENGTH_SHORT).show();
+				updateWidget();
 			}
         });
         
@@ -112,12 +121,13 @@ public class MainActivity extends Activity {
 				if (BRIGHT) {
 					mTorchOn = true;
 				} else {
-					if (setFlashOn().equals("Failed")) {
+					if (device.FlashOn().equals("Failed")) {
 						Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
 						return;
 					}
 					Toast.makeText(context, "Turned LED on", Toast.LENGTH_SHORT).show();
 				}
+				updateWidget();
 			}
         });
         
@@ -126,23 +136,24 @@ public class MainActivity extends Activity {
 			public void run() {
 				while (!Thread.interrupted()) {
 					while (mTorchOn) {
-							setFlashFlash();
-							try {
-								Thread.sleep(200);
-							} catch (InterruptedException e) {
-								setFlashOff();
-							}
+						FlashDevice.setFlashFlash();
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException e) {
+							FlashDevice.setFlashOff();
+						}
 					}
 					try {
 						Thread.sleep(200);
 					} catch (InterruptedException e) {
-						setFlashOff();
+						FlashDevice.setFlashOff();
 					}
 				}
 				mTorchOn = false;
 			}
 		});
-		torchThread.start();
+		if (BRIGHT)
+			torchThread.start();
 		
 		strobeThread = new Thread(new Runnable() {
 			@Override
@@ -166,25 +177,25 @@ public class MainActivity extends Activity {
 					    });
 					  }
 					    onTime = strobeperiod/4;
-						setFlashFlash();
+					    FlashDevice.setFlashFlash();
 						try {
 							Thread.sleep(onTime);
 						} catch (InterruptedException e) {
-							setFlashOff();
+							device.FlashOff();
 						}
 						if (strobing)
-							setFlashOff();
+							device.FlashOff();
 						try {
 							Thread.sleep(strobeperiod);
 						} catch (InterruptedException e) {
-							setFlashOff();
+							device.FlashOff();
 						}
 					}
 					strobing = false;
 					try {
 						Thread.sleep(strobeperiod);
 					} catch (InterruptedException e) {
-						setFlashOff();
+						device.FlashOff();
 					}
 				}
 			}
@@ -202,6 +213,7 @@ public class MainActivity extends Activity {
 						  mTimedOut = false;
 						}
 					}
+					updateWidget();
 					return;
 				}
 				strobing = true;
@@ -242,11 +254,12 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				strobing = false;
 				buttonStrobe.setChecked(false);
-				if (setFlashFlash().equals("Failed")) {
+				if (FlashDevice.setFlashFlash().equals("Failed")) {
 					Toast.makeText(context, "Error setting LED flash", Toast.LENGTH_LONG).show();
 					return;
 				}
 				Toast.makeText(context, "Made LED flash", Toast.LENGTH_SHORT).show();
+				updateWidget();
 			}
         });
         
@@ -261,10 +274,15 @@ public class MainActivity extends Activity {
         if (new File("/dev/msm_camera/config0").exists() == false) {
         	Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
         	is_supported = false;
-        } else {
+        }
+
+        if (!device.open) {
+        	Log.d("Torch", "Cant open flash RW");
         	is_supported = this.su_command.can_su;
         	if (!is_supported)
         		this.openNotRootDialog();
+        	else
+        		su_command.Run("chmod 666 /dev/msm_camera/config0");
         }
         if (!is_supported) {
         	buttonOff.setEnabled(false);
@@ -273,7 +291,10 @@ public class MainActivity extends Activity {
         	buttonStrobe.setEnabled(false);
         	slider.setEnabled(false);
         } else {
-        	su_command.Run("chmod 666 /dev/msm_camera/config0");
+        	device.Open();
+        	if (!device.open) {
+        		Toast.makeText(context, "Cannot access LED device, sorry!", Toast.LENGTH_LONG).show();
+        	}
         }
     }
     
@@ -289,27 +310,28 @@ public class MainActivity extends Activity {
 					e.printStackTrace();
 				}
 	    	}
-	    	setFlashOff();
+	    	device.FlashOff();
     	}
-    	this.mTorchOn = false;
-    	this.torchThread.interrupt();
 		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
-    	closeFlash();
+		device.Close();
     	this.mPrefsEditor.commit();
+    	this.updateWidget();
     	super.onPause();
     }
     
-    public void onResume() {
-    	openFlash();
-    	super.onResume();
+    public void onDestroy() {
+    	device.Open();
+    	FlashDevice.setFlashOff();
+    	device.Close();
+    	this.updateWidget();
+    	super.onDestroy();
     }
     
-    // These functions are defined in the native libflash library.
-    public native String  openFlash();
-    public native String  setFlashOff();
-    public native String  setFlashOn();
-    public native String  setFlashFlash();
-    public native String  closeFlash();
+    public void onResume() {
+    	device.Open();
+    	this.updateWidget();
+    	super.onResume();
+    }
 
     
     @Override
@@ -360,49 +382,8 @@ public class MainActivity extends Activity {
         .show();
    	}
    	
-   	/*
-   	 * This class handles 'su' functionality. Ensures that the command can be run, then
-   	 * handles run/pipe/return flow.
-   	 */
-   	private class SuCommand {
-   		public boolean can_su;
-   		public String su_bin_file;
-   		
-   		public SuCommand() {
-   			this.can_su = true;
-   			this.su_bin_file = "/system/xbin/su";
-   			if (this.Run("echo"))
-   				return;
-   			this.su_bin_file = "/system/bin/su";
-   			if (this.Run("echo"))
-   				return;
-   			this.su_bin_file = "";
-   			this.can_su = false;	
-   		}
-   	    public boolean Run(String command) {
-   	    	DataOutputStream os = null;
-   	    	try {
-   				Process process = Runtime.getRuntime().exec(this.su_bin_file);
-   				os = new DataOutputStream(process.getOutputStream());
-   				os.writeBytes(command + "\n");
-   				os.flush();
-   				os.writeBytes("exit\n");
-   				os.flush();
-   				process.waitFor();
-   				return true;
-   			} catch (IOException e) {
-   				e.printStackTrace();
-   				Toast.makeText(context, "Error running: " + command, Toast.LENGTH_LONG).show();
-   			} catch (InterruptedException e) {
-   				e.printStackTrace();
-   				Toast.makeText(context, "Error running: " + command, Toast.LENGTH_LONG).show();
-   			}
-   	    	return false;
-   	    }	
+   	public void updateWidget() {
+   		this.mWidgetProvider.updateState(context);
    	}
    	
-   	// Load libflash once on app startup.
-   	static {
-   		System.loadLibrary("flash");
-   	}
 }

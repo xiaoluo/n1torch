@@ -23,14 +23,14 @@
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		
 				android:layout_gravity="center_vertical"
-				android:textColor="#ffffff" />		
-			<TextView android:text="Warning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the API doesnt support it yet....\n\nI do not support full brightness 'always on' as this could damage the LED.\n"
+				android:textColor="#ffffffff" />		
+			<TextView android:text="Warning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the API doesnt support it yet....\n\nI do not support full brightness 'always on' as this could damage the LED (pending testing).\n"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		
 				android:layout_gravity="center_vertical"
 				android:textStyle="bold"
-				android:textColor="#ffffff" />		
+				android:textColor="#ffff8080" />		
 			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nContact: bbuxton@gmail.com\n\n24/12/2009"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
