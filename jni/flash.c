@@ -11,7 +11,7 @@ int dev;
 int led_mode;
 int ioctlRetVal = 1;
 
-JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_openFlash(JNIEnv* env)
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_openFlash(JNIEnv* env)
 {
 
   dev = open("/dev/msm_camera/config0", O_RDWR);
@@ -21,7 +21,7 @@ JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_openFlash(JNIEnv* e
   return (*env)->NewStringUTF(env, "OK");
 }
 
-JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashOff(JNIEnv *env)
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_setFlashOff(JNIEnv *env)
 {
 
   led_mode = 0;
@@ -31,7 +31,7 @@ JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashOff(JNIEnv 
   return (*env)->NewStringUTF(env, "OK");
 }
 
-JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashOn(JNIEnv *env)
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_setFlashOn(JNIEnv *env)
 {
 
   led_mode = 1;
@@ -41,7 +41,7 @@ JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashOn(JNIEnv *
   return (*env)->NewStringUTF(env, "OK");
 }
 
-JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashFlash(JNIEnv *env)
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_setFlashFlash(JNIEnv *env)
 {
 
   led_mode = 2;
@@ -51,7 +51,7 @@ JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_setFlashFlash(JNIEn
   return (*env)->NewStringUTF(env, "OK");
 }
 
-JNIEXPORT jstring JNICALL Java_net_cactii_flash_MainActivity_closeFlash(JNIEnv *env)
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_closeFlash(JNIEnv *env)
 {
   if (dev > 0) {
     close(dev);
