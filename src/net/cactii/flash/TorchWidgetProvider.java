@@ -42,12 +42,8 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 	            views.setOnClickPendingIntent(R.id.btn, pendingIntent);
             } else {
             	device = FlashDevice.getInstance();
-    			if (!device.open) {
-    				device.Open();
-    				if (!device.open) {
-    					su.Run("chmod 666 /dev/msm_camera/config0");
-    				}
-    			}
+    			if (!device.Writable())
+    				su.Run("chmod 666 /dev/msm_camera/config0");
 	            views.setOnClickPendingIntent(R.id.btn, 
 	            		getLaunchPendingIntent(context,
 	            				appWidgetId, 0));
@@ -73,14 +69,14 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 			Uri data = intent.getData();
 			int buttonId = Integer.parseInt(data.getSchemeSpecificPart());
 			device = FlashDevice.getInstance();
-			if (buttonId == 0) {	
-				if (!device.open)
-					device.Open();
+			if (buttonId == 0) {
+    			if (!device.Writable())
+    				new Su().Run("chmod 666 /dev/msm_camera/config0");
+				device.Open();
 				if (device.on)
 					device.FlashOff();
 				else
 					device.FlashOn();
-
 				device.Close();
 			}
 			this.updateState(context);

@@ -21,6 +21,18 @@ JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_openFlash(JNIEnv* en
   return (*env)->NewStringUTF(env, "OK");
 }
 
+JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_flashWritable(JNIEnv* env)
+{
+  struct stat st;
+  if (stat("/dev/msm_camera/config0", &st) < 0)
+    return (*env)->NewStringUTF(env, "Failed open");
+  
+  if (!(st.st_mode & S_IRWXO))
+    return (*env)->NewStringUTF(env, "Failed perm");
+  else
+    return (*env)->NewStringUTF(env, "OK");
+}
+
 JNIEXPORT jstring JNICALL Java_net_cactii_flash_FlashDevice_setFlashOff(JNIEnv *env)
 {
 

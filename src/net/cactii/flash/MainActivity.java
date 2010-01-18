@@ -276,7 +276,7 @@ public class MainActivity extends Activity {
         	is_supported = false;
         }
 
-        if (!device.open) {
+        if (!device.Writable()) {
         	Log.d("Torch", "Cant open flash RW");
         	is_supported = this.su_command.can_su;
         	if (!is_supported)

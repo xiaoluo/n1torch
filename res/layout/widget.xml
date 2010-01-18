@@ -33,7 +33,5 @@
             android:textColor="#ffffffaa"
             android:text="Torch"
             />
-        </LinearLayout>
-
-    	
+        </LinearLayout>	
 </LinearLayout>
