@@ -32,22 +32,26 @@ public class TorchWidgetProvider extends AppWidgetProvider {
             int appWidgetId = appWidgetIds[i];
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
             
-            Su su = new Su();
-            if (!su.can_su) {
-            	// If 'su' is not available, clicking the widget will bring
-            	// up the main activity where the user will be notified.
-	            Intent intent = new Intent(context, MainActivity.class);
-	            PendingIntent pendingIntent = PendingIntent.getActivity(context,
-	            		0, intent, 0);
-	            views.setOnClickPendingIntent(R.id.btn, pendingIntent);
-            } else {
-            	device = FlashDevice.getInstance();
-    			if (!device.Writable())
-    				su.Run("chmod 666 /dev/msm_camera/config0");
-	            views.setOnClickPendingIntent(R.id.btn, 
-	            		getLaunchPendingIntent(context,
-	            				appWidgetId, 0));
+            device = FlashDevice.getInstance();
+            Boolean ok = true;
+            if (!device.Writable()) {
+                Su su = new Su();
+                if (!su.can_su) {
+                	// If 'su' is not available, clicking the widget will bring
+                	// up the main activity where the user will be notified.
+                	ok = false;
+    	            Intent intent = new Intent(context, MainActivity.class);
+    	            PendingIntent pendingIntent = PendingIntent.getActivity(context,
+    	            		0, intent, 0);
+    	            views.setOnClickPendingIntent(R.id.btn, pendingIntent);
+                } else {
+        			su.Run("chmod 666 /dev/msm_camera/config0");
+                }
             }
+            if (ok)
+	            views.setOnClickPendingIntent(R.id.btn, getLaunchPendingIntent(context,
+	            		appWidgetId, 0));
+
 			this.updateState(context);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
