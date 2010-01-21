@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
         slider = (SeekBar) findViewById(R.id.slider);
         
         buttonFlash = (Button) findViewById(R.id.buttonFlash);
-        su_command = new Su();
+
         strobing = false;
         strobeperiod = 100;
         mTorchOn = false;
@@ -233,8 +233,8 @@ public class MainActivity extends Activity {
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
 				strobeperiod = 201 - progress;
-				if (strobeperiod < 10)
-					strobeperiod = 10;
+				if (strobeperiod < 20)
+					strobeperiod = 20;
 				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
 			}
 
@@ -278,6 +278,7 @@ public class MainActivity extends Activity {
 
         if (!device.Writable()) {
         	Log.d("Torch", "Cant open flash RW");
+            su_command = new Su();
         	is_supported = this.su_command.can_su;
         	if (!is_supported)
         		this.openNotRootDialog();
