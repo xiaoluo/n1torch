@@ -21,6 +21,7 @@ import android.view.SubMenu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -31,8 +32,6 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
-	public static final boolean BRIGHT = false;
-	
 	public TorchWidgetProvider mWidgetProvider;
 	
 	public FlashDevice device;
@@ -44,8 +43,11 @@ public class MainActivity extends Activity {
 	private ToggleButton buttonStrobe;
 	// Is the strobe running?
 	public Boolean strobing;
-	// Flash button
-	private Button buttonFlash;
+	
+	public CheckBox buttonBright;
+	public TextView labelBright;
+	public boolean bright;
+
 	// Thread to handle strobing
 	public Thread strobeThread;
 	public boolean mStrobeThreadRunning;
@@ -79,9 +81,9 @@ public class MainActivity extends Activity {
         buttonStrobe = (ToggleButton) findViewById(R.id.buttonStrobe);
         strobeLabel = (TextView) findViewById(R.id.strobeTimeLabel);
         slider = (SeekBar) findViewById(R.id.slider);
+        buttonBright = (CheckBox)findViewById(R.id.highBright);
+        labelBright = (TextView)findViewById(R.id.labelBright);
         
-        buttonFlash = (Button) findViewById(R.id.buttonFlash);
-
         strobing = false;
         strobeperiod = 100;
         mTorchOn = false;
@@ -95,6 +97,31 @@ public class MainActivity extends Activity {
         
         // preferenceEditor
         this.mPrefsEditor = this.mPrefs.edit();
+        
+        bright = this.mPrefs.getBoolean("bright", false);
+        buttonBright.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+          @Override
+          public void onCheckedChanged(CompoundButton buttonView,
+              boolean isChecked) {
+            if (isChecked)
+              openBrightDialog();
+            else {
+              bright = false;
+              mPrefsEditor.putBoolean("bright", false);
+              mPrefsEditor.commit();
+            }
+          }
+        });
+        
+        labelBright.setOnClickListener(new OnClickListener() {
+
+          @Override
+          public void onClick(View v) {
+            buttonBright.setChecked(!buttonBright.isChecked());
+          }
+          
+        });
         
         // Turn LED off.
         buttonOff.setOnClickListener(new OnClickListener() {
@@ -118,7 +145,7 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				strobing = false;
 				buttonStrobe.setChecked(false);
-				if (BRIGHT) {
+				if (bright) {
 					mTorchOn = true;
 				} else {
 					if (device.FlashOn().equals("Failed")) {
@@ -152,8 +179,7 @@ public class MainActivity extends Activity {
 				mTorchOn = false;
 			}
 		});
-		if (BRIGHT)
-			torchThread.start();
+		torchThread.start();
 		
 		strobeThread = new Thread(new Runnable() {
 			@Override
@@ -166,7 +192,7 @@ public class MainActivity extends Activity {
 					  
 					  // Stop strobe if on for more than 25 seconds. Otherwise the
 					  // LED lifetime may be reduced.
-					  if (System.currentTimeMillis() - startTime > 25000) {
+					  if (!bright && System.currentTimeMillis() - startTime > 25000) {
 					    strobing = false;
 					    mTimedOut = true;
 					    buttonStrobe.post(new Runnable() {
@@ -247,21 +273,7 @@ public class MainActivity extends Activity {
 			}
         	
         });
-        
-        // FLASH button.
-        buttonFlash.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				strobing = false;
-				buttonStrobe.setChecked(false);
-				if (FlashDevice.setFlashFlash().equals("Failed")) {
-					Toast.makeText(context, "Error setting LED flash", Toast.LENGTH_LONG).show();
-					return;
-				}
-				Toast.makeText(context, "Made LED flash", Toast.LENGTH_SHORT).show();
-				updateWidget();
-			}
-        });
+
         
         // Show the about dialog, the first time the user runs the app.
         if (!this.mPrefs.getBoolean("aboutSeen", false)) {
@@ -288,7 +300,6 @@ public class MainActivity extends Activity {
         if (!is_supported) {
         	buttonOff.setEnabled(false);
         	buttonOn.setEnabled(false);
-        	buttonFlash.setEnabled(false);
         	buttonStrobe.setEnabled(false);
         	slider.setEnabled(false);
         } else {
@@ -382,6 +393,28 @@ public class MainActivity extends Activity {
         })
         .show();
    	}
+   	
+    
+    private void openBrightDialog() {
+        LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.brightwarn, null); 
+        new AlertDialog.Builder(MainActivity.this)
+        .setTitle("!!!")
+        .setView(view)
+        .setNegativeButton("No thanks", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                        MainActivity.this.buttonBright.setChecked(false);
+                }
+        })
+        .setNeutralButton("Accept", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                  MainActivity.this.bright = true;
+                  mPrefsEditor.putBoolean("bright", true);
+                  mPrefsEditor.commit();
+                }
+        })
+        .show();
+    }
    	
    	public void updateWidget() {
    		this.mWidgetProvider.updateState(context);
