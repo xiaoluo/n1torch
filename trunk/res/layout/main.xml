@@ -24,6 +24,7 @@
 	    android:textSize="18pt"
 	    android:layout_toRightOf="@id/buttonOff"
 	    />
+	
 	<LinearLayout
 		android:layout_width="wrap_content"
 	   	android:layout_height="wrap_content"
@@ -64,18 +65,31 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_centerHorizontal="true" />
     </LinearLayout>
-	<Button  
-		android:id="@+id/buttonFlash"
-	    android:layout_width="fill_parent" 
-	    android:layout_height="10mm" 
-	    android:text="Flash!" 
-	    android:layout_marginTop="25dp"
-	    android:layout_marginLeft="20dp"
-	    android:layout_marginRight="20dp"
-	    android:textStyle="bold"
-	    android:textSize="18pt"
-	    android:layout_below="@id/strobeBox"
-	    />
+
+	<LinearLayout
+		android:id="@+id/brightBox"
+		android:orientation="horizontal"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_centerHorizontal="true"
+		android:layout_marginTop="25dp"
+		android:padding="5dp"
+		android:background="#ff303030"
+		android:layout_below="@+id/strobeBox">
+		<TextView
+			android:id="@+id/labelBright"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="High brightness"
+			android:textStyle="bold"
+		/>
+		<CheckBox
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:id="@+id/highBright"
+		/>
+	</LinearLayout>
+	
 	<TextView
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"

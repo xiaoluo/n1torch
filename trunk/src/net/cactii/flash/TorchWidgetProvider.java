@@ -6,13 +6,19 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.widget.RemoteViews;
 
 public class TorchWidgetProvider extends AppWidgetProvider {
 	
 	public FlashDevice device;
 	private static TorchWidgetProvider sInstance;
+	public boolean mTorchOn;
+	public Thread brightThread;
+    public SharedPreferences mPrefs;
+
 	
 	private Su su;
 	
@@ -21,11 +27,13 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 				"net.cactii.flash.TorchWidgetProvider");
 	
 	static synchronized TorchWidgetProvider getInstance() {
-		if (sInstance == null)
+		if (sInstance == null) {
 			sInstance = new TorchWidgetProvider();
+		}
 		return sInstance;
 	}
 	
+
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 		final int N = appWidgetIds.length;
         for (int i=0; i<N; i++) {
@@ -74,6 +82,7 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 			int buttonId = Integer.parseInt(data.getSchemeSpecificPart());
 			device = FlashDevice.getInstance();
 			if (buttonId == 0) {
+			  
     			if (!device.Writable())
     				new Su().Run("chmod 666 /dev/msm_camera/config0");
 				device.Open();
