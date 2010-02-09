@@ -21,7 +21,7 @@
 				android:textSize="18dp"
 				android:gravity="center_vertical|center_horizontal"
 				android:textColor="#ff0000" />
-			<TextView android:text="Full brightness has been tested successfully for 1/2 hour of operation, but got quite hot. Long term efects are unknown.\n\nClick 'Accept' if you want to use it at your own risk."
+			<TextView android:text="Full brightness has been tested successfully for 1/2 hour of operation, but got quite hot, and started flickering (temporarily) at 45 mins. Long term effects are unknown.\n\nThis is not supported on the widget yet.\n\nClick 'Accept' if you want to use it at your own risk."
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingTop="15px"

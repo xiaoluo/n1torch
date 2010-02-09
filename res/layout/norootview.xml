@@ -11,7 +11,7 @@
 		    android:orientation="vertical"
 		    android:layout_width="fill_parent"
 		    android:layout_height="fill_parent">
-			<TextView android:text="Sorry, but your phone requires root privileges to run this. You dont appear to have enabled this."
+			<TextView android:text="Sorry, but your phone requires root privileges to run this. You dont appear to have enabled this.\n\nYou can continue, but the light wont work."
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingTop="15px"
