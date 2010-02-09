@@ -24,7 +24,7 @@
 				android:paddingLeft="15px"		
 				android:layout_gravity="center_vertical"
 				android:textColor="#ffffffff" />		
-			<TextView android:text="Warning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the API doesnt support it yet....\n\nI do not support full brightness 'always on' as this could damage the LED (pending testing).\n"
+			<TextView android:text="Warning: Leaving the LED on for a long time might overheat it. Likely not, but there is a reason the API doesnt support it yet....\n\nFull brightness 'always on' has been tested running for 1/2 hr, but there is the risk this could damage the LED.\n"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		

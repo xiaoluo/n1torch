@@ -99,12 +99,15 @@ public class MainActivity extends Activity {
         this.mPrefsEditor = this.mPrefs.edit();
         
         bright = this.mPrefs.getBoolean("bright", false);
+        buttonBright.setChecked(bright);
         buttonBright.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
           @Override
           public void onCheckedChanged(CompoundButton buttonView,
               boolean isChecked) {
-            if (isChecked)
+        	if (isChecked && mPrefs.getBoolean("bright", false))
+        		MainActivity.this.bright = true;
+        	else if (isChecked)
               openBrightDialog();
             else {
               bright = false;
@@ -311,6 +314,7 @@ public class MainActivity extends Activity {
     }
     
     public void onPause() {
+    	Log.d("Torch", "Called onPause()");
     	if (strobing) {
 	    	strobing = false;
 			buttonStrobe.setChecked(false);
@@ -386,7 +390,7 @@ public class MainActivity extends Activity {
                         MainActivity.this.finish();
                 }
         })
-        .setNeutralButton("Override", new DialogInterface.OnClickListener() {
+        .setNeutralButton("Ignore", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                     // nothing
                 }
@@ -399,7 +403,7 @@ public class MainActivity extends Activity {
         LayoutInflater li = LayoutInflater.from(this);
         View view = li.inflate(R.layout.brightwarn, null); 
         new AlertDialog.Builder(MainActivity.this)
-        .setTitle("!!!")
+        .setTitle("Hi-brite 'On' button!!!")
         .setView(view)
         .setNegativeButton("No thanks", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
