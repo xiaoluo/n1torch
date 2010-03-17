@@ -31,7 +31,7 @@
 				android:layout_gravity="center_vertical"
 				android:textStyle="bold"
 				android:textColor="#ffff8080" />		
-			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nContact: bbuxton@gmail.com\n\n24/12/2009"
+			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nThanks to David Prieto for new UI design.\n\nContact: bbuxton@gmail.com\n\n17/3/2009"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		

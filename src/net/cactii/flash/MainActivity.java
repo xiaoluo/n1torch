@@ -23,6 +23,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,9 +41,12 @@ public class MainActivity extends Activity {
 	// On button
 	private Button buttonOn;
 	// Strobe toggle
-	private ToggleButton buttonStrobe;
+	private CheckBox buttonStrobe;
 	// Is the strobe running?
 	public Boolean strobing;
+	
+	public RelativeLayout brightRow;
+	public RelativeLayout strobeRow;
 	
 	public CheckBox buttonBright;
 	public TextView labelBright;
@@ -74,15 +78,18 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.mainnew);
         context = this.getApplicationContext();
-        buttonOff = (Button) findViewById(R.id.buttonOff);
         buttonOn = (Button) findViewById(R.id.buttonOn);
-        buttonStrobe = (ToggleButton) findViewById(R.id.buttonStrobe);
+        buttonStrobe = (CheckBox) findViewById(R.id.strobe);
         strobeLabel = (TextView) findViewById(R.id.strobeTimeLabel);
         slider = (SeekBar) findViewById(R.id.slider);
-        buttonBright = (CheckBox)findViewById(R.id.highBright);
-        labelBright = (TextView)findViewById(R.id.labelBright);
+        buttonBright = (CheckBox)findViewById(R.id.bright);
+        labelBright = (TextView)findViewById(R.id.brightLabel);
+        
+        brightRow = (RelativeLayout)findViewById(R.id.brightRow);
+        strobeRow = (RelativeLayout)findViewById(R.id.strobeRow);
+
         
         strobing = false;
         strobeperiod = 100;
@@ -116,46 +123,46 @@ public class MainActivity extends Activity {
             }
           }
         });
+
         
-        labelBright.setOnClickListener(new OnClickListener() {
+        strobeLabel.setOnClickListener(new OnClickListener() {
 
           @Override
           public void onClick(View v) {
-            buttonBright.setChecked(!buttonBright.isChecked());
+            buttonStrobe.setChecked(!buttonStrobe.isChecked());
           }
           
         });
-        
-        // Turn LED off.
-        buttonOff.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				strobing = false;
-				mTorchOn = false;
-				buttonStrobe.setChecked(false);
-				if (device.FlashOff().equals("Failed")) {
-					Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
-					return;
-				}
-				Toast.makeText(context, "Turned LED off", Toast.LENGTH_SHORT).show();
-				updateWidget();
-			}
-        });
+
         
         // Turn LED on
         buttonOn.setOnClickListener(new OnClickListener() {
 			@Override
-			public void onClick(View v) {
-				strobing = false;
-				buttonStrobe.setChecked(false);
-				if (bright) {
+			public void onClick(View v) {				
+				if (!strobing && buttonStrobe.isChecked()) {
+	        strobing = true;
+	        mTorchOn = false;
+	         buttonOn.setText("Off");
+			  } else if (bright && !mTorchOn && !strobing) {
 					mTorchOn = true;
+          buttonOn.setText("Off");
+				} else if (device.on || strobing || mTorchOn) {
+	        strobing = false;
+	        mTorchOn = false;
+	        buttonOn.setText("On");
+	        if (device.FlashOff().equals("Failed")) {
+	          Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
+	          return;
+	        }
+	        Toast.makeText(context, "Turned LED off", Toast.LENGTH_SHORT).show();
 				} else {
+				  mTorchOn = false;
 					if (device.FlashOn().equals("Failed")) {
 						Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
 						return;
 					}
 					Toast.makeText(context, "Turned LED on", Toast.LENGTH_SHORT).show();
+	         buttonOn.setText("Off");
 				}
 				updateWidget();
 			}
@@ -230,25 +237,7 @@ public class MainActivity extends Activity {
 			}
 		});
 		strobeThread.start();
-        
-        // Handle LED strobe function.
-        buttonStrobe.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-			public void onCheckedChanged(CompoundButton b, boolean checked) {
-				if (!checked) {
-					if (strobeThread != null) {
-						strobing = false;
-						if (mTimedOut) {
-						  Toast.makeText(MainActivity.this, "Stopping strobe to save LED", Toast.LENGTH_SHORT).show();
-						  mTimedOut = false;
-						}
-					}
-					updateWidget();
-					return;
-				}
-				strobing = true;
-				mTorchOn = false;
-			}
-        });
+
         
         // Strobe frequency slider bar handling
         setProgressBarVisibility(true);
