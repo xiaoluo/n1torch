@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -70,6 +71,9 @@ public class MainActivity extends Activity {
 	public TextView strobeLabel;
 	// Represents a 'su' instance
 	public Su su_command;
+	
+	public boolean has_root;
+	
 	// Preferences
 	public SharedPreferences mPrefs;
 	public SharedPreferences.Editor mPrefsEditor = null;
@@ -95,6 +99,7 @@ public class MainActivity extends Activity {
         strobeperiod = 100;
         mTorchOn = false;
         mTorchThreadRunning = false;
+        has_root = false;
         
         mWidgetProvider = TorchWidgetProvider.getInstance();
         device = FlashDevice.getInstance();
@@ -134,112 +139,34 @@ public class MainActivity extends Activity {
           
         });
 
-        
-        // Turn LED on
         buttonOn.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {				
-				if (!strobing && buttonStrobe.isChecked()) {
-	        strobing = true;
-	        mTorchOn = false;
-	         buttonOn.setText("Off");
-			  } else if (bright && !mTorchOn && !strobing) {
-					mTorchOn = true;
-          buttonOn.setText("Off");
-				} else if (device.on || strobing || mTorchOn) {
-	        strobing = false;
-	        mTorchOn = false;
-	        buttonOn.setText("On");
-	        if (device.FlashOff().equals("Failed")) {
-	          Toast.makeText(context, "Error setting LED off", Toast.LENGTH_LONG).show();
-	          return;
-	        }
-	        Toast.makeText(context, "Turned LED off", Toast.LENGTH_SHORT).show();
-				} else {
-				  mTorchOn = false;
-					if (device.FlashOn().equals("Failed")) {
-						Toast.makeText(context, "Error setting LED on", Toast.LENGTH_LONG).show();
-						return;
-					}
-					Toast.makeText(context, "Turned LED on", Toast.LENGTH_SHORT).show();
-	         buttonOn.setText("Off");
-				}
-				updateWidget();
-			}
-        });
-        
-		torchThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (!Thread.interrupted()) {
-					while (mTorchOn) {
-						FlashDevice.setFlashFlash();
-						try {
-							Thread.sleep(200);
-						} catch (InterruptedException e) {
-							FlashDevice.setFlashOff();
-						}
-					}
-					try {
-						Thread.sleep(200);
-					} catch (InterruptedException e) {
-						FlashDevice.setFlashOff();
-					}
-				}
-				mTorchOn = false;
-			}
-		});
-		torchThread.start();
-		
-		strobeThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (!Thread.interrupted()) {
-				    mTimedOut = false;
-					int onTime;
-					long startTime = System.currentTimeMillis();
-					while (strobing) {
-					  
-					  // Stop strobe if on for more than 25 seconds. Otherwise the
-					  // LED lifetime may be reduced.
-					  if (!bright && System.currentTimeMillis() - startTime > 25000) {
-					    strobing = false;
-					    mTimedOut = true;
-					    buttonStrobe.post(new Runnable() {
-		                  @Override
-		                  public void run() {
-		                    buttonStrobe.setChecked(false);
-		                  }
-					    });
-					  }
-					    onTime = strobeperiod/4;
-					    FlashDevice.setFlashFlash();
-						try {
-							Thread.sleep(onTime);
-						} catch (InterruptedException e) {
-							device.FlashOff();
-						}
-						if (strobing)
-							device.FlashOff();
-						try {
-							Thread.sleep(strobeperiod);
-						} catch (InterruptedException e) {
-							device.FlashOff();
-						}
-					}
-					strobing = false;
-					try {
-						Thread.sleep(strobeperiod);
-					} catch (InterruptedException e) {
-						device.FlashOff();
-					}
-				}
-			}
-		});
-		strobeThread.start();
 
-        
-        // Strobe frequency slider bar handling
+          @Override
+          public void onClick(View v) {
+            Intent intent;
+            if (has_root && (buttonStrobe.isChecked() || bright))
+              intent = new Intent(MainActivity.this, RootTorchService.class);
+            else
+              intent = new Intent(MainActivity.this, TorchService.class);
+
+            intent.putExtra("strobe", buttonStrobe.isChecked());
+            intent.putExtra("period", strobeperiod);
+
+
+            if (!mTorchOn) {
+              startService(intent);
+              mTorchOn = true;
+              buttonOn.setText("Off");
+            } else {
+              stopService(intent);
+              mTorchOn = false;
+              buttonOn.setText("On");
+            }
+          }
+          
+        });
+     
+         // Strobe frequency slider bar handling
         setProgressBarVisibility(true);
         slider.setHorizontalScrollBarEnabled(true);
         slider.setProgress(200 - this.mPrefs.getInt("strobeperiod", 100));
@@ -254,6 +181,10 @@ public class MainActivity extends Activity {
 				if (strobeperiod < 20)
 					strobeperiod = 20;
 				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
+				
+				Intent intent = new Intent("net.cactii.flash.SET_STROBE");
+				intent.putExtra("period", strobeperiod);
+				sendBroadcast(intent);
 			}
 
 			@Override
@@ -267,73 +198,52 @@ public class MainActivity extends Activity {
         });
 
         
-        // Show the about dialog, the first time the user runs the app.
-        if (!this.mPrefs.getBoolean("aboutSeen", false)) {
-          this.openAboutDialog();
-          this.mPrefsEditor.putBoolean("aboutSeen", true);
-        }
-        
-        boolean is_supported = true;
-        
-        if (new File("/dev/msm_camera/config0").exists() == false) {
-        	Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
-        	is_supported = false;
-        }
+      // Show the about dialog, the first time the user runs the app.
+      if (!this.mPrefs.getBoolean("aboutSeen", false)) {
+        this.openAboutDialog();
+        this.mPrefsEditor.putBoolean("aboutSeen", true);
+      }
 
-        if (!device.Writable()) {
-        	Log.d("Torch", "Cant open flash RW");
-            su_command = new Su();
-        	is_supported = this.su_command.can_su;
-        	if (!is_supported)
-        		this.openNotRootDialog();
-        	else
-        		su_command.Run("chmod 666 /dev/msm_camera/config0");
-        }
-        if (!is_supported) {
-        	buttonOff.setEnabled(false);
-        	buttonOn.setEnabled(false);
-        	buttonStrobe.setEnabled(false);
-        	slider.setEnabled(false);
-        } else {
-        	device.Open();
-        	if (!device.open) {
-        		Toast.makeText(context, "Cannot access LED device, sorry!", Toast.LENGTH_LONG).show();
-        	}
+        
+      if (new File("/dev/msm_camera/config0").exists() == false) {
+      	Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
+      	has_root = false;
+      }
+
+      if (!device.Writable()) {
+      	Log.d("Torch", "Cant open flash RW");
+          su_command = new Su();
+      	has_root = this.su_command.can_su;
+      	if (!has_root)
+      		this.openNotRootDialog();
+      	else
+      		su_command.Run("chmod 666 /dev/msm_camera/config0");
+      }
+
+        if (!has_root) {
+        	//buttonOff.setEnabled(false);
+        	//buttonOn.setEnabled(false);
+          buttonBright.setChecked(false);
+
+        	buttonBright.setEnabled(false);
+        	//slider.setEnabled(false);
         }
     }
     
     public void onPause() {
-    	Log.d("Torch", "Called onPause()");
-    	if (strobing) {
-	    	strobing = false;
-			buttonStrobe.setChecked(false);
-	    	if (strobeThread != null) {
-		    	try {
-					strobeThread.join();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-	    	}
-	    	device.FlashOff();
-    	}
+
 		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
-		device.Close();
     	this.mPrefsEditor.commit();
     	this.updateWidget();
     	super.onPause();
     }
     
     public void onDestroy() {
-    	device.Open();
-    	FlashDevice.setFlashOff();
-    	device.Close();
     	this.updateWidget();
     	super.onDestroy();
     }
     
     public void onResume() {
-    	device.Open();
     	this.updateWidget();
     	super.onResume();
     }
