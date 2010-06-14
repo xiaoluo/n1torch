@@ -17,11 +17,13 @@ public class FlashDevice {
 
 	
 	public void Open() {
+
 		if (!open && "Failed".equals(openFlash()))
 			open = false;
 		else
 			open = true;
 		Log.d("Torch", "flash opened: " + open);
+
 	}
 	
 	public boolean Writable() {
