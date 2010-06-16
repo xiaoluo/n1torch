@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen  
+    xmlns:android="http://schemas.android.com/apk/res/android">  
+        <PreferenceCategory android:title="General options">
+
+            <CheckBoxPreference
+                    android:key="widget_bright"
+                    android:title="Bright widget"
+                    android:defaultValue="false" />
+            <CheckBoxPreference
+                    android:key="widget_strobe"
+                    android:title="Strobe flash"
+                    android:defaultValue="false" />          
+             <net.cactii.flash.SeekBarPreference android:key="widget_strobe_freq"
+			        android:title="Strobe frequency"
+			        android:summary="Frequency of strobe light"
+			        android:dialogMessage="Frequency"
+			        android:defaultValue="5"
+			        android:text=" Hz"
+			        android:max="25"
+			        />
+			<Preference
+				android:key="empty"
+				android:title=""
+				android:enabled="false"
+				/>
+			<Preference
+				android:id="@+id/saveSetting"
+				android:key="saveSettings"
+				android:title="Add widget"
+				/>
+        </PreferenceCategory>
+</PreferenceScreen>  

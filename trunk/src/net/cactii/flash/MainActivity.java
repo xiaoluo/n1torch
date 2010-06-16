@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
           @Override
           public void onClick(View v) {
             Intent intent;
-            if (has_root && (buttonStrobe.isChecked() || bright))
+            if (device.Writable() && (buttonStrobe.isChecked() || bright))
               intent = new Intent(MainActivity.this, RootTorchService.class);
             else
               intent = new Intent(MainActivity.this, TorchService.class);
@@ -152,18 +152,21 @@ public class MainActivity extends Activity {
             intent.putExtra("strobe", buttonStrobe.isChecked());
             intent.putExtra("period", strobeperiod);
 
-
             if (!mTorchOn) {
               startService(intent);
               mTorchOn = true;
               buttonOn.setText("Off");
+              slider.setEnabled(false);
+              buttonStrobe.setEnabled(false);
             } else {
               stopService(intent);
               mTorchOn = false;
               buttonOn.setText("On");
+              slider.setEnabled(true);
+              buttonStrobe.setEnabled(true);
             }
           }
-          
+
         });
      
          // Strobe frequency slider bar handling
@@ -214,20 +217,21 @@ public class MainActivity extends Activity {
       	Log.d("Torch", "Cant open flash RW");
           su_command = new Su();
       	has_root = this.su_command.can_su;
-      	if (!has_root)
+      	if (!has_root) {
       		this.openNotRootDialog();
-      	else
-      		su_command.Run("chmod 666 /dev/msm_camera/config0");
-      }
-
-        if (!has_root) {
-        	//buttonOff.setEnabled(false);
-        	//buttonOn.setEnabled(false);
+          //buttonOff.setEnabled(false);
+          //buttonOn.setEnabled(false);
           buttonBright.setChecked(false);
 
-        	buttonBright.setEnabled(false);
-        	//slider.setEnabled(false);
-        }
+          buttonBright.setEnabled(false);
+          //slider.setEnabled(false);
+      		
+      	} else
+      		su_command.Run("chmod 666 /dev/msm_camera/config0");
+
+      }
+
+
     }
     
     public void onPause() {

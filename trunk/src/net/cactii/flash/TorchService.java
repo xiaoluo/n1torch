@@ -17,6 +17,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 public class TorchService extends Service {
+  public static final String MSG_TAG = "TorchNotRoot";
 
   private Camera mCamera;
   private Camera.Parameters mParams;
@@ -26,6 +27,7 @@ public class TorchService extends Service {
   
   public TimerTask mStrobeTask;
   public Timer mStrobeTimer;
+  public int mStrobePeriod;
   
   public Handler mHandler;
   private IntentReceiver mReceiver;
@@ -64,16 +66,18 @@ public class TorchService extends Service {
   
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
+    Log.d(MSG_TAG, "Starting torch");
     try {
       this.mCamera = Camera.open();
     } catch (RuntimeException e) {
       
     }
 
-    if (intent != null && intent.getBooleanExtra("strobe", false))
+    if (intent != null && intent.getBooleanExtra("strobe", false)) {
+      this.mStrobePeriod = intent.getIntExtra("period", 200)/4;
       this.mStrobeTimer.schedule(this.mStrobeTask, 0,
-          intent.getIntExtra("period", 200)/4);
-    else {
+          this.mStrobePeriod);
+    } else {
       this.mParams = mCamera.getParameters();
       this.mParams.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
       this.mCamera.setParameters(this.mParams);
@@ -96,7 +100,8 @@ public class TorchService extends Service {
   
   public void Reshedule(int period) {
     this.mStrobeTimer.cancel();
-    this.mStrobeTimer.schedule(this.mStrobeTask, 0, period/4);
+    this.mStrobePeriod = period/4;
+    this.mStrobeTimer.schedule(this.mStrobeTask, 0, this.mStrobePeriod);
   }
   
   public void onDestroy() {
