@@ -7,14 +7,19 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 public class RootTorchService extends Service {
 
+  public static final String MSG_TAG = "TorchRoot";
   private FlashDevice mDevice;
   public Thread mStrobeThread;
+  public Handler mHandler;
   
   public TimerTask mTorchTask;
   public Timer mTorchTimer;
@@ -26,10 +31,13 @@ public class RootTorchService extends Service {
   private Notification mNotification;
   
   public boolean mTorchOn;
+  private int mStrobePeriod;
   
   public void onCreate() {
     String ns = Context.NOTIFICATION_SERVICE;
     this.mNotificationManager = (NotificationManager) getSystemService(ns);
+    
+    this.mHandler = new Handler() {};
     
     this.mTorchTask = new TimerTask() {
       public void run() {
@@ -63,10 +71,11 @@ public class RootTorchService extends Service {
     
     this.mDevice = new FlashDevice();
     this.mDevice.Open();
-    
-    if (intent.getBooleanExtra("strobe", false))
-      this.mStrobeTimer.schedule(this.mStrobeTask, 0, 20);
-    else
+    Log.d(MSG_TAG, "Starting torch");
+    if (intent.getBooleanExtra("strobe", false)) {
+      this.mStrobePeriod = intent.getIntExtra("period", 200)/4;
+      this.mStrobeTimer.schedule(this.mStrobeTask, 0, this.mStrobePeriod);
+    } else
       this.mTorchTimer.schedule(this.mTorchTask, 0, 200);
     
     this.mNotification = new Notification(R.drawable.notification_icon,
@@ -89,10 +98,31 @@ public class RootTorchService extends Service {
     this.mDevice.FlashOff();
     this.mDevice.Close();
   }
+  
+  public void Reshedule(int period) {
+    this.mStrobeTimer.cancel();
+    this.mStrobePeriod = period/4;
+    this.mStrobeTimer.schedule(this.mStrobeTask, 0, this.mStrobePeriod);
+  }
+  
   @Override
   public IBinder onBind(Intent intent) {
     // TODO Auto-generated method stub
     return null;
   }
 
+  public class IntentReceiver extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(Context context, final Intent intent) {
+      mHandler.post(new Runnable() {
+
+        @Override
+        public void run() {
+          Reshedule(intent.getIntExtra("period", 200));
+        }
+        
+      });
+    }
+  }
 }

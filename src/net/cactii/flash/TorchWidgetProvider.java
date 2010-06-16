@@ -1,6 +1,11 @@
 package net.cactii.flash;
 
+import java.util.List;
+
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
@@ -8,7 +13,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.RemoteViews;
 
 public class TorchWidgetProvider extends AppWidgetProvider {
@@ -39,28 +46,11 @@ public class TorchWidgetProvider extends AppWidgetProvider {
         for (int i=0; i<N; i++) {
             int appWidgetId = appWidgetIds[i];
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
-            
-            device = FlashDevice.getInstance();
-            Boolean ok = true;
-            if (!device.Writable()) {
-                Su su = new Su();
-                if (!su.can_su) {
-                	// If 'su' is not available, clicking the widget will bring
-                	// up the main activity where the user will be notified.
-                	ok = false;
-    	            Intent intent = new Intent(context, MainActivity.class);
-    	            PendingIntent pendingIntent = PendingIntent.getActivity(context,
-    	            		0, intent, 0);
-    	            views.setOnClickPendingIntent(R.id.btn, pendingIntent);
-                } else {
-        			su.Run("chmod 666 /dev/msm_camera/config0");
-                }
-            }
-            if (ok)
-	            views.setOnClickPendingIntent(R.id.btn, getLaunchPendingIntent(context,
-	            		appWidgetId, 0));
 
-			this.updateState(context);
+            views.setOnClickPendingIntent(R.id.btn, getLaunchPendingIntent(context,
+            		appWidgetId, 0));
+
+            this.updateState(context);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
 	}
@@ -77,30 +67,60 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 	
 	public void onReceive(Context context, Intent intent) {
 		super.onReceive(context, intent);
+		SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 		if (intent.hasCategory(Intent.CATEGORY_ALTERNATIVE)) {
 			Uri data = intent.getData();
 			int buttonId = Integer.parseInt(data.getSchemeSpecificPart());
+
 			device = FlashDevice.getInstance();
 			if (buttonId == 0) {
-			  
-    			if (!device.Writable())
-    				new Su().Run("chmod 666 /dev/msm_camera/config0");
-				device.Open();
-				if (device.on)
-					device.FlashOff();
-				else
-					device.FlashOn();
-				device.Close();
+			  Intent pendingIntent;
+			  Bundle extras = intent.getExtras();
+			  int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
+			  if (extras != null)
+			    appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, 
+			                  AppWidgetManager.INVALID_APPWIDGET_ID); 
+			  if (device.Writable() && mPrefs.getBoolean("widget_bright", false)) {
+			    pendingIntent = new Intent(context, RootTorchService.class);
+			  } else {
+	        pendingIntent = new Intent(context, TorchService.class);
+			  }
+			  if (mPrefs.getBoolean("widget_strobe", false)) {
+			    pendingIntent.putExtra("strobe", true);
+			    pendingIntent.putExtra("period", mPrefs.getInt("widget_strobe_freq", 200));
+			  }
+		    if (this.TorchServiceRunning(context)) {
+		      context.stopService(pendingIntent);
+		    } else {
+          context.startService(pendingIntent);
+		    }
 			}
 			this.updateState(context);
 		}
 	}
 	
+	private boolean TorchServiceRunning(Context context) {
+	   ActivityManager am = (ActivityManager) context.getSystemService(Activity.ACTIVITY_SERVICE);
+	    
+	    List<ActivityManager.RunningServiceInfo> svcList = am.getRunningServices(100);
+	    
+	    if (!(svcList.size() > 0))
+	      return false;
+	    for (int i = 0 ; i < svcList.size() ; i++) {
+	      RunningServiceInfo serviceInfo = svcList.get(i);
+	      ComponentName serviceName = serviceInfo.service;
+	      if(serviceName.getClassName().endsWith(".TorchService") ||
+	          serviceName.getClassName().endsWith(".RootTorchService"))
+	        return true;
+	    }
+	    return false;
+	}
+	
 	public void updateState(Context context) {
 		RemoteViews views = new RemoteViews(context.getPackageName(),
                 R.layout.widget);
-		device = FlashDevice.getInstance();
-		if (device.on) {
+
+		if (this.TorchServiceRunning(context)) {
 			views.setImageViewResource(R.id.img_torch, R.drawable.icon);
 		} else {
 			views.setImageViewResource(R.id.img_torch, R.drawable.widget_off);
