@@ -35,7 +35,7 @@ public class SmlTorchWidgetProvider extends TorchWidgetProvider {
 	}
 	
 	@Override
-	public void updateState(Context context) {
+	public void updateState(Context context, int appWidgetId) {
 		RemoteViews views = new RemoteViews(context.getPackageName(),
                 R.layout.widget);
 		device = FlashDevice.getInstance();

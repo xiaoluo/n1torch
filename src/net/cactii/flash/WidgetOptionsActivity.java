@@ -1,11 +1,14 @@
 package net.cactii.flash;
 
+import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
@@ -14,6 +17,8 @@ import android.preference.PreferenceManager;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 
 public class WidgetOptionsActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
   
@@ -21,6 +26,8 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
   public Context mContext;
   public SeekBarPreference mStrobeFrequency;
   public SharedPreferences mPreferences;
+  
+  private Su mSu;
   
   public void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
@@ -53,8 +60,12 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
         public boolean onPreferenceClick(Preference preference) {
           Editor editor = mPreferences.edit();
 
-          editor.putInt("widget_strobe_freq",
+          editor.putBoolean("widget_strobe_" + mAppWidgetId,
+                  mPreferences.getBoolean("widget_strobe", false));
+          editor.putInt("widget_strobe_freq_" + mAppWidgetId,
               500/mPreferences.getInt("widget_strobe_freq", 5));
+          editor.putBoolean("widget_bright_" + mAppWidgetId,
+                  mPreferences.getBoolean("widget_bright", false));
           editor.commit();
           AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(mContext);
           Intent resultValue = new Intent();
@@ -66,6 +77,13 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
         
       });
       
+      this.mSu = new Su();
+      if (!this.mSu.can_su) {
+        if (!Build.VERSION.RELEASE.equals("2.2")) {
+          this.openNotRootDialog();
+        }
+        mBrightPref.setEnabled(false);
+      }
   }
 
   
@@ -82,5 +100,24 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
     }
     
   }
+  
+  private void openNotRootDialog() {
+    LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.norootview, null); 
+    new AlertDialog.Builder(WidgetOptionsActivity.this)
+        .setTitle("Not Root!")
+        .setView(view)
+        .setNegativeButton("Close", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                        WidgetOptionsActivity.this.finish();
+                }
+        })
+        .setNeutralButton("Ignore", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // nothing
+                }
+        })
+        .show();
+    }
   
 }
