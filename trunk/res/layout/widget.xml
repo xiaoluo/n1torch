@@ -21,9 +21,10 @@
             android:layout_height="0dip"
             android:layout_weight="1"
             android:scaleType="center"
+            android:src="@drawable/widget_off"
             />
             
-                    <TextView
+         <TextView
             android:id="@+id/ind"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"

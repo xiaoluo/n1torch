@@ -11,6 +11,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
@@ -37,8 +39,6 @@ public class MainActivity extends Activity {
 	public TorchWidgetProvider mWidgetProvider;
 	
 	public FlashDevice device;
-    // Off button
-	private Button buttonOff;
 	// On button
 	private Button buttonOn;
 	// Strobe toggle
@@ -77,6 +77,8 @@ public class MainActivity extends Activity {
 	// Preferences
 	public SharedPreferences mPrefs;
 	public SharedPreferences.Editor mPrefsEditor = null;
+	
+	private Camera mCamera;
 
     /** Called when the activity is first created. */
     @Override
@@ -140,7 +142,6 @@ public class MainActivity extends Activity {
         });
 
         buttonOn.setOnClickListener(new OnClickListener() {
-
           @Override
           public void onClick(View v) {
             Intent intent;
@@ -215,23 +216,20 @@ public class MainActivity extends Activity {
 
       if (!device.Writable()) {
       	Log.d("Torch", "Cant open flash RW");
-          su_command = new Su();
+        su_command = new Su();
       	has_root = this.su_command.can_su;
       	if (!has_root) {
-      		this.openNotRootDialog();
-          //buttonOff.setEnabled(false);
-          //buttonOn.setEnabled(false);
+      	  if (!Build.VERSION.RELEASE.equals("2.2")) {
+      		  this.openNotRootDialog();
+      	  }
           buttonBright.setChecked(false);
-
+          labelBright.setText("High brightness (needs root)");
+          labelBright.setTextColor(0xffaaaaaa);
           buttonBright.setEnabled(false);
-          //slider.setEnabled(false);
       		
       	} else
       		su_command.Run("chmod 666 /dev/msm_camera/config0");
-
       }
-
-
     }
     
     public void onPause() {
@@ -324,7 +322,7 @@ public class MainActivity extends Activity {
     }
    	
    	public void updateWidget() {
-   		this.mWidgetProvider.updateState(context);
+   		this.mWidgetProvider.updateAllStates(context);
    	}
    	
 }

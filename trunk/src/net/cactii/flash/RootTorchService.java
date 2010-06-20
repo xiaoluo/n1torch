@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 public class RootTorchService extends Service {
 
@@ -70,6 +71,17 @@ public class RootTorchService extends Service {
   public int onStartCommand(Intent intent, int flags, int startId) {
     
     this.mDevice = new FlashDevice();
+    
+    if (!this.mDevice.Writable()) {
+      Log.d("Torch", "Cant open flash RW");
+      Su su = new Su();
+      if (!su.can_su) {
+        Toast.makeText(this, "Torch - cannot get root", Toast.LENGTH_SHORT).show();
+        this.stopSelf();
+      }
+      su.Run("chmod 666 /dev/msm_camera/config0");
+    }
+    
     this.mDevice.Open();
     Log.d(MSG_TAG, "Starting torch");
     if (intent.getBooleanExtra("strobe", false)) {

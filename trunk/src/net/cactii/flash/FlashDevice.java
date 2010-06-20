@@ -22,6 +22,7 @@ public class FlashDevice {
 			open = false;
 		else
 			open = true;
+
 		Log.d("Torch", "flash opened: " + open);
 
 	}

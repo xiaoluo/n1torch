@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 public class TorchWidgetProvider extends AppWidgetProvider {
 
@@ -46,7 +47,7 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 
       views.setOnClickPendingIntent(R.id.btn, getLaunchPendingIntent(context, appWidgetId, 0));
 
-      this.updateState(context);
+      this.updateState(context, appWidgetId);
       appWidgetManager.updateAppWidget(appWidgetId, views);
     }
   }
@@ -72,26 +73,36 @@ public class TorchWidgetProvider extends AppWidgetProvider {
       Uri data = intent.getData();
       int buttonId;
       int widgetId;
-      buttonId = Integer.parseInt(data.getSchemeSpecificPart().split("/")[0]);
-      widgetId = Integer.parseInt(data.getSchemeSpecificPart().split("/")[1]);
+      widgetId = Integer.parseInt(data.getSchemeSpecificPart().split("/")[0]);
+      buttonId = Integer.parseInt(data.getSchemeSpecificPart().split("/")[1]);
 
       device = FlashDevice.getInstance();
       Log.d("TorchWidget", "Button Id is: " + widgetId);
       if (buttonId == 0) {
         Intent pendingIntent;
         Bundle extras = intent.getExtras();
+        
+        if (this.TorchServiceRunning(context)) {
+          context.stopService(new Intent(context, TorchService.class));
+          context.stopService(new Intent(context, RootTorchService.class));
+          this.updateAllStates(context);
+          return;
+        }
+        
         int appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
         if (extras != null)
           appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,
               AppWidgetManager.INVALID_APPWIDGET_ID);
-        if (device.Writable() && mPrefs.getBoolean("widget_bright", false)) {
+        if (!device.Writable())
+          this.AttemptToChmodDevice(context);
+        if (device.Writable() && mPrefs.getBoolean("widget_bright_" + widgetId, false)) {
           pendingIntent = new Intent(context, RootTorchService.class);
         } else {
           pendingIntent = new Intent(context, TorchService.class);
         }
-        if (mPrefs.getBoolean("widget_strobe", false)) {
+        if (mPrefs.getBoolean("widget_strobe_" + widgetId, false)) {
           pendingIntent.putExtra("strobe", true);
-          pendingIntent.putExtra("period", mPrefs.getInt("widget_strobe_freq", 200));
+          pendingIntent.putExtra("period", mPrefs.getInt("widget_strobe_freq_" + widgetId, 200));
         }
         if (this.TorchServiceRunning(context)) {
           context.stopService(pendingIntent);
@@ -99,7 +110,23 @@ public class TorchWidgetProvider extends AppWidgetProvider {
           context.startService(pendingIntent);
         }
       }
-      this.updateState(context);
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      this.updateAllStates(context);
+    }
+  }
+  
+  private void AttemptToChmodDevice(Context context) {
+    Log.d("Torch", "Cant open flash RW");
+    Su su = new Su();
+    if (su.can_su) {
+      su.Run("chmod 666 /dev/msm_camera/config0");
+    } else {
+      Toast.makeText(context, "Torch - cannot get root", Toast.LENGTH_SHORT).show();
     }
   }
 
@@ -119,16 +146,29 @@ public class TorchWidgetProvider extends AppWidgetProvider {
     }
     return false;
   }
+  
+  public void updateAllStates(Context context) {
+    final AppWidgetManager am = AppWidgetManager.getInstance(context);
+    for (int id : am.getAppWidgetIds(THIS_APPWIDGET))
+      this.updateState(context, id);
+  }
 
-  public void updateState(Context context) {
+  public void updateState(Context context, int appWidgetId) {
     RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget);
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
     if (this.TorchServiceRunning(context)) {
       views.setImageViewResource(R.id.img_torch, R.drawable.icon);
     } else {
       views.setImageViewResource(R.id.img_torch, R.drawable.widget_off);
     }
+
+    if (prefs.getBoolean("widget_strobe_" + appWidgetId, false))
+      views.setTextViewText(R.id.ind, "Strobe");
+    if (prefs.getBoolean("widget_bright_" + appWidgetId, false)) {
+      views.setTextViewText(R.id.ind, "Bright");
+    }
     final AppWidgetManager gm = AppWidgetManager.getInstance(context);
-    gm.updateAppWidget(THIS_APPWIDGET, views);
+    gm.updateAppWidget(appWidgetId, views);
   }
 }
