@@ -4,9 +4,13 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
+import java.util.List;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.ActivityManager.RunningServiceInfo;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -145,26 +149,45 @@ public class MainActivity extends Activity {
           @Override
           public void onClick(View v) {
             Intent intent;
-            if (device.Writable() && (buttonStrobe.isChecked() || bright))
+            
+            if (Build.VERSION.RELEASE.equals("2.2")) {
+              if (bright) {
+                if (device.Writable()) {
+                  intent = new Intent(MainActivity.this, RootTorchService.class);
+                } else {
+                  Toast.makeText(context, "No root, cant go high brightness.", Toast.LENGTH_SHORT).show();
+                  intent = new Intent(MainActivity.this, TorchService.class);
+                }
+              } else {
+                intent = new Intent(MainActivity.this, TorchService.class);
+              }
+            } else {  // Pre-Froyo
+              if (!device.Writable()) {
+                Toast.makeText(context, "No root, cant open LED.", Toast.LENGTH_SHORT).show();
+                return;
+              }
               intent = new Intent(MainActivity.this, RootTorchService.class);
-            else
-              intent = new Intent(MainActivity.this, TorchService.class);
+            }
 
             intent.putExtra("strobe", buttonStrobe.isChecked());
             intent.putExtra("period", strobeperiod);
+            intent.putExtra("bright", bright);
 
             if (!mTorchOn) {
               startService(intent);
               mTorchOn = true;
               buttonOn.setText("Off");
-              slider.setEnabled(false);
+              buttonBright.setEnabled(false);
               buttonStrobe.setEnabled(false);
+              if (!buttonStrobe.isChecked())
+                slider.setEnabled(false);
             } else {
               stopService(intent);
               mTorchOn = false;
               buttonOn.setText("On");
-              slider.setEnabled(true);
+              buttonBright.setEnabled(true);
               buttonStrobe.setEnabled(true);
+              slider.setEnabled(true);
             }
           }
 
@@ -178,26 +201,26 @@ public class MainActivity extends Activity {
         strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
         slider.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress,
-					boolean fromUser) {
-				strobeperiod = 201 - progress;
-				if (strobeperiod < 20)
-					strobeperiod = 20;
-				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
-				
-				Intent intent = new Intent("net.cactii.flash.SET_STROBE");
-				intent.putExtra("period", strobeperiod);
-				sendBroadcast(intent);
-			}
-
-			@Override
-			public void onStartTrackingTouch(SeekBar seekBar) {
-			}
-
-			@Override
-			public void onStopTrackingTouch(SeekBar seekBar) {
-			}
+    			@Override
+    			public void onProgressChanged(SeekBar seekBar, int progress,
+    					boolean fromUser) {
+    				strobeperiod = 201 - progress;
+    				if (strobeperiod < 20)
+    					strobeperiod = 20;
+    				strobeLabel.setText("Strobe frequency: " + 500/strobeperiod + "Hz");
+    				
+    				Intent intent = new Intent("net.cactii.flash.SET_STROBE");
+    				intent.putExtra("period", strobeperiod);
+    				sendBroadcast(intent);
+    			}
+    
+    			@Override
+    			public void onStartTrackingTouch(SeekBar seekBar) {
+    			}
+    
+    			@Override
+    			public void onStopTrackingTouch(SeekBar seekBar) {
+    			}
         	
         });
 
@@ -231,10 +254,10 @@ public class MainActivity extends Activity {
       		su_command.Run("chmod 666 /dev/msm_camera/config0");
       }
     }
-    
+
     public void onPause() {
 
-		this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
+      this.mPrefsEditor.putInt("strobeperiod", this.strobeperiod);
     	this.mPrefsEditor.commit();
     	this.updateWidget();
     	super.onPause();
@@ -246,10 +269,34 @@ public class MainActivity extends Activity {
     }
     
     public void onResume() {
+      if (this.TorchServiceRunning(context)) {
+        buttonOn.setText("Off");
+        buttonBright.setEnabled(false);
+        buttonStrobe.setEnabled(false);
+        if (!buttonStrobe.isChecked())
+          slider.setEnabled(false);
+        this.mTorchOn = true;
+      }
     	this.updateWidget();
     	super.onResume();
     }
 
+    private boolean TorchServiceRunning(Context context) {
+      ActivityManager am = (ActivityManager) context.getSystemService(Activity.ACTIVITY_SERVICE);
+
+      List<ActivityManager.RunningServiceInfo> svcList = am.getRunningServices(100);
+
+      if (!(svcList.size() > 0))
+        return false;
+      for (int i = 0; i < svcList.size(); i++) {
+        RunningServiceInfo serviceInfo = svcList.get(i);
+        ComponentName serviceName = serviceInfo.service;
+        if (serviceName.getClassName().endsWith(".TorchService")
+            || serviceName.getClassName().endsWith(".RootTorchService"))
+          return true;
+      }
+      return false;
+    }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
