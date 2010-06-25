@@ -3,6 +3,8 @@ package net.cactii.flash;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.cactii.flash.RootTorchService.WrapperTask;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -12,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -31,12 +34,14 @@ public class TorchService extends Service {
   
   public Handler mHandler;
   private IntentReceiver mReceiver;
+
+  private Runnable mStrobeRunnable;
   
   public void onCreate() {
     String ns = Context.NOTIFICATION_SERVICE;
     this.mNotificationManager = (NotificationManager) getSystemService(ns);
     
-    this.mStrobeTask = new TimerTask() {
+    this.mStrobeRunnable = new Runnable() {
       public int mCounter = 4;
       public boolean mOn;
       
@@ -57,6 +62,8 @@ public class TorchService extends Service {
         }
       }
     };
+    this.mStrobeTask = new WrapperTask(this.mStrobeRunnable);
+    
     this.mStrobeTimer = new Timer();
     
     this.mHandler = new Handler() {
@@ -71,6 +78,9 @@ public class TorchService extends Service {
       this.mCamera = Camera.open();
     } catch (RuntimeException e) {
       
+    }
+    if (!Build.VERSION.RELEASE.equals("2.2")) {
+      this.stopSelf();
     }
 
     if (intent != null && intent.getBooleanExtra("strobe", false)) {
@@ -97,12 +107,7 @@ public class TorchService extends Service {
     startForeground(0, this.mNotification);
     return START_STICKY;
   }
-  
-  public void Reshedule(int period) {
-    this.mStrobeTimer.cancel();
-    this.mStrobePeriod = period/4;
-    this.mStrobeTimer.schedule(this.mStrobeTask, 0, this.mStrobePeriod);
-  }
+
   
   public void onDestroy() {
     this.mStrobeTimer.cancel();
@@ -110,6 +115,24 @@ public class TorchService extends Service {
     this.mNotificationManager.cancelAll();
     this.unregisterReceiver(this.mReceiver);
     stopForeground(true);
+  }
+  
+  public void Reshedule(int period) {
+    this.mStrobeTask.cancel();
+    this.mStrobeTask = new WrapperTask(this.mStrobeRunnable);
+    
+    this.mStrobePeriod = period/4;
+    this.mStrobeTimer.schedule(this.mStrobeTask, 0, this.mStrobePeriod);
+  }
+  
+  public class WrapperTask extends TimerTask {
+    private final Runnable target;
+    public WrapperTask(Runnable target) {
+      this.target = target;
+    }
+    public void run() {
+      target.run();
+    }
   }
   
   @Override

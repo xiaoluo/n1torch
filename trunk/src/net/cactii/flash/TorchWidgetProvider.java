@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -93,13 +94,30 @@ public class TorchWidgetProvider extends AppWidgetProvider {
         if (extras != null)
           appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID,
               AppWidgetManager.INVALID_APPWIDGET_ID);
+        
+        
         if (!device.Writable())
           this.AttemptToChmodDevice(context);
-        if (device.Writable() && mPrefs.getBoolean("widget_bright_" + widgetId, false)) {
+        
+        if (Build.VERSION.RELEASE.equals("2.2")) {
+          if (mPrefs.getBoolean("widget_bright_" + widgetId, false)) {
+            if (device.Writable()) {
+              pendingIntent = new Intent(context, RootTorchService.class);
+            } else {
+              Toast.makeText(context, "No root, cant go high brightness.", Toast.LENGTH_SHORT).show();
+              pendingIntent = new Intent(context, TorchService.class);
+            }
+          } else {
+            pendingIntent = new Intent(context, TorchService.class);
+          }
+        } else {  // Pre-Froyo
+          if (!device.Writable()) {
+            Toast.makeText(context, "Cant open LED. No root?", Toast.LENGTH_SHORT).show();
+            return;
+          }
           pendingIntent = new Intent(context, RootTorchService.class);
-        } else {
-          pendingIntent = new Intent(context, TorchService.class);
         }
+        pendingIntent.putExtra("bright", mPrefs.getBoolean("widget_bright_" + widgetId, false));
         if (mPrefs.getBoolean("widget_strobe_" + widgetId, false)) {
           pendingIntent.putExtra("strobe", true);
           pendingIntent.putExtra("period", mPrefs.getInt("widget_strobe_freq_" + widgetId, 200));
@@ -165,9 +183,11 @@ public class TorchWidgetProvider extends AppWidgetProvider {
 
     if (prefs.getBoolean("widget_strobe_" + appWidgetId, false))
       views.setTextViewText(R.id.ind, "Strobe");
-    if (prefs.getBoolean("widget_bright_" + appWidgetId, false)) {
+    else if (prefs.getBoolean("widget_bright_" + appWidgetId, false))
       views.setTextViewText(R.id.ind, "Bright");
-    }
+    else
+      views.setTextViewText(R.id.ind, "Torch");
+
     final AppWidgetManager gm = AppWidgetManager.getInstance(context);
     gm.updateAppWidget(appWidgetId, views);
   }
