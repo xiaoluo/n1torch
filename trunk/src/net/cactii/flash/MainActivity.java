@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
           public void onClick(View v) {
             Intent intent;
             
-            if (Build.VERSION.RELEASE.equals("2.2")) {
+            if (Build.VERSION.SDK_INT >= 7) {
               if (bright) {
                 if (device.Writable()) {
                   intent = new Intent(MainActivity.this, RootTorchService.class);
@@ -231,9 +231,9 @@ public class MainActivity extends Activity {
         this.mPrefsEditor.putBoolean("aboutSeen", true);
       }
 
-        
-      if (new File("/dev/msm_camera/config0").exists() == false) {
-      	Toast.makeText(context, "Only Nexus One is supported, sorry!", Toast.LENGTH_LONG).show();
+      if (!Build.MODEL.equals("Nexus One") &&
+          !Build.MODEL.equals("Nexus S")) {
+      	Toast.makeText(context, "Your " + Build.MODEL + " is probably not supported, sorry!", Toast.LENGTH_LONG).show();
       	has_root = false;
       }
 
@@ -242,7 +242,7 @@ public class MainActivity extends Activity {
         su_command = new Su();
       	has_root = this.su_command.can_su;
       	if (!has_root) {
-      	  if (!Build.VERSION.RELEASE.equals("2.2")) {
+      	  if (Build.VERSION.SDK_INT < 7) {
       		  this.openNotRootDialog();
       	  }
           buttonBright.setChecked(false);

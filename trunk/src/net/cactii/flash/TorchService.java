@@ -77,13 +77,14 @@ public class TorchService extends Service {
     try {
       this.mCamera = Camera.open();
     } catch (RuntimeException e) {
-      
+      e.printStackTrace();
     }
-    if (!Build.VERSION.RELEASE.equals("2.2")) {
+    if (Build.VERSION.SDK_INT < 7) {
       this.stopSelf();
     }
 
     if (intent != null && intent.getBooleanExtra("strobe", false)) {
+      this.mCamera.startPreview();
       this.mStrobePeriod = intent.getIntExtra("period", 200)/4;
       this.mStrobeTimer.schedule(this.mStrobeTask, 0,
           this.mStrobePeriod);
@@ -91,6 +92,7 @@ public class TorchService extends Service {
       this.mParams = mCamera.getParameters();
       this.mParams.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
       this.mCamera.setParameters(this.mParams);
+      this.mCamera.startPreview();
     }
     
     this.mReceiver = new IntentReceiver();
@@ -111,6 +113,7 @@ public class TorchService extends Service {
   
   public void onDestroy() {
     this.mStrobeTimer.cancel();
+    this.mCamera.stopPreview();
     this.mCamera.release();
     this.mNotificationManager.cancelAll();
     this.unregisterReceiver(this.mReceiver);
