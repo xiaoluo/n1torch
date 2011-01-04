@@ -18,7 +18,7 @@
 				android:paddingLeft="15px"
 				android:textStyle="bold"
 				android:textColor="#ffffff" />
-			<TextView android:text="This program manipulates the camera LED on the Nexus One phone.\n\nRequires root, pre-Froyo, otherwise only requires root for 'Bright' mode.\n"
+			<TextView android:text="This program manipulates the camera LED on the Nexus One/S phones.\n\nRequires root, pre-Froyo, otherwise only requires root for 'Bright' mode.\n"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		
@@ -31,7 +31,7 @@
 				android:layout_gravity="center_vertical"
 				android:textStyle="bold"
 				android:textColor="#ffff8080" />		
-			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nThanks to David Prieto for new UI design.\n\nContact: bbuxton@gmail.com\n\n20/6/2010"
+			<TextView android:text="Released under the GPL, v3.\nhttp://n1torch.googlecode.com/\n\nThanks to David Prieto for new UI design.\n\nContact: bbuxton@gmail.com\n\n4/1/2011"
 				android:layout_width="fill_parent" 
 				android:layout_height="wrap_content"
 				android:paddingLeft="15px"		
