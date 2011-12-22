@@ -1,5 +1,6 @@
 package net.cactii.flash;
 
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -18,6 +19,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.SurfaceView;
 
 public class TorchService extends Service {
   public static final String MSG_TAG = "TorchNotRoot";
@@ -82,7 +84,14 @@ public class TorchService extends Service {
     if (Build.VERSION.SDK_INT < 7) {
       this.stopSelf();
     }
-
+  
+    if (Build.VERSION.SDK_INT > 10) {
+      MainActivity.ma.surfaceView = new MySurface(this);
+      MainActivity.ma.surfaceView.mCamera = mCamera;
+    
+      MainActivity.ma.brightRow.addView(MainActivity.ma.surfaceView, 30, 20);
+    }
+    
     if (intent != null && intent.getBooleanExtra("strobe", false)) {
       this.mCamera.startPreview();
       this.mStrobePeriod = intent.getIntExtra("period", 200)/4;
@@ -92,6 +101,13 @@ public class TorchService extends Service {
       this.mParams = mCamera.getParameters();
       this.mParams.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
       this.mCamera.setParameters(this.mParams);
+      try {
+        if (Build.VERSION.SDK_INT > 10)
+          this.mCamera.setPreviewDisplay(MainActivity.ma.surfaceView.getHolder());
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
       this.mCamera.startPreview();
     }
     
