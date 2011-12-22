@@ -84,6 +84,8 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
         }
         mBrightPref.setEnabled(false);
       }
+      if (Build.VERSION.SDK_INT > 10)
+        this.openNoWidgetDialog();
   }
 
   
@@ -106,6 +108,25 @@ public class WidgetOptionsActivity extends PreferenceActivity implements OnShare
         View view = li.inflate(R.layout.norootview, null); 
     new AlertDialog.Builder(WidgetOptionsActivity.this)
         .setTitle("Not Root!")
+        .setView(view)
+        .setNegativeButton("Close", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                        WidgetOptionsActivity.this.finish();
+                }
+        })
+        .setNeutralButton("Ignore", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                    // nothing
+                }
+        })
+        .show();
+    }
+  
+  private void openNoWidgetDialog() {
+    LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.nowidgetview, null); 
+    new AlertDialog.Builder(WidgetOptionsActivity.this)
+        .setTitle("No Widgets in ICS!")
         .setView(view)
         .setNegativeButton("Close", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {

@@ -40,6 +40,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class MainActivity extends Activity {
 
+  public static MainActivity ma;
 	public TorchWidgetProvider mWidgetProvider;
 	
 	public FlashDevice device;
@@ -55,6 +56,9 @@ public class MainActivity extends Activity {
 	
 	public CheckBox buttonBright;
 	public TextView labelBright;
+	
+	public MySurface surfaceView;
+	
 	public boolean bright;
 
 	// Thread to handle strobing
@@ -89,6 +93,7 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainnew);
+        ma = this;
         context = this.getApplicationContext();
         buttonOn = (Button) findViewById(R.id.buttonOn);
         buttonStrobe = (CheckBox) findViewById(R.id.strobe);
@@ -99,7 +104,6 @@ public class MainActivity extends Activity {
         
         brightRow = (RelativeLayout)findViewById(R.id.brightRow);
         strobeRow = (RelativeLayout)findViewById(R.id.strobeRow);
-
         
         strobing = false;
         strobeperiod = 100;
